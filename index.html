@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="favicon.ico" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0"
+    />
+
+    <title>Mustafa Khizar</title>
+  </head>
+
+  <body class="light-theme">
+    <div class="experience">
+      <canvas class="experience-canvas"></canvas>
+    </div>
+
+    <!-- Preloader -->
+    <div class="preloader">
+      <div class="preloader-wrapper">
+        <div class="loader">
+          <div class="justify-content-center jimu-primary-loading"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="page" asscroll-container>
+      <div class="toggle-bar">
+        <div class="sun-wrapper">
+          <svg xmlns="http://www.w3.org/2000/svg" height="30" width="30">
+            <path
+              fill="currentColor"
+              d="M12 5Q11.575 5 11.288 4.712Q11 4.425 11 4V2Q11 1.575 11.288 1.287Q11.575 1 12 1Q12.425 1 12.713 1.287Q13 1.575 13 2V4Q13 4.425 12.713 4.712Q12.425 5 12 5ZM16.95 7.05Q16.675 6.775 16.675 6.362Q16.675 5.95 16.95 5.65L18.35 4.225Q18.65 3.925 19.062 3.925Q19.475 3.925 19.775 4.225Q20.05 4.5 20.05 4.925Q20.05 5.35 19.775 5.625L18.35 7.05Q18.075 7.325 17.65 7.325Q17.225 7.325 16.95 7.05ZM20 13Q19.575 13 19.288 12.712Q19 12.425 19 12Q19 11.575 19.288 11.287Q19.575 11 20 11H22Q22.425 11 22.712 11.287Q23 11.575 23 12Q23 12.425 22.712 12.712Q22.425 13 22 13ZM12 23Q11.575 23 11.288 22.712Q11 22.425 11 22V20Q11 19.575 11.288 19.288Q11.575 19 12 19Q12.425 19 12.713 19.288Q13 19.575 13 20V22Q13 22.425 12.713 22.712Q12.425 23 12 23ZM5.65 7.05 4.225 5.65Q3.925 5.35 3.925 4.925Q3.925 4.5 4.225 4.225Q4.5 3.95 4.925 3.95Q5.35 3.95 5.625 4.225L7.05 5.65Q7.325 5.925 7.325 6.35Q7.325 6.775 7.05 7.05Q6.75 7.325 6.35 7.325Q5.95 7.325 5.65 7.05ZM18.35 19.775 16.95 18.35Q16.675 18.05 16.675 17.638Q16.675 17.225 16.95 16.95Q17.225 16.675 17.638 16.675Q18.05 16.675 18.35 16.95L19.775 18.35Q20.075 18.625 20.062 19.05Q20.05 19.475 19.775 19.775Q19.475 20.075 19.05 20.075Q18.625 20.075 18.35 19.775ZM2 13Q1.575 13 1.288 12.712Q1 12.425 1 12Q1 11.575 1.288 11.287Q1.575 11 2 11H4Q4.425 11 4.713 11.287Q5 11.575 5 12Q5 12.425 4.713 12.712Q4.425 13 4 13ZM4.225 19.775Q3.95 19.5 3.95 19.075Q3.95 18.65 4.225 18.375L5.65 16.95Q5.925 16.675 6.338 16.675Q6.75 16.675 7.05 16.95Q7.35 17.25 7.35 17.663Q7.35 18.075 7.05 18.375L5.65 19.775Q5.35 20.075 4.925 20.075Q4.5 20.075 4.225 19.775ZM12 18Q9.5 18 7.75 16.25Q6 14.5 6 12Q6 9.5 7.75 7.75Q9.5 6 12 6Q14.5 6 16.25 7.75Q18 9.5 18 12Q18 14.5 16.25 16.25Q14.5 18 12 18ZM12 16Q13.65 16 14.825 14.825Q16 13.65 16 12Q16 10.35 14.825 9.175Q13.65 8 12 8Q10.35 8 9.175 9.175Q8 10.35 8 12Q8 13.65 9.175 14.825Q10.35 16 12 16Z"
+            />
+          </svg>
+        </div>
+        <button class="toggle-button">
+          <div class="toggle-circle"></div>
+        </button>
+        <div class="moon-wrapper">
+          <svg xmlns="http://www.w3.org/2000/svg" height="24" width="24">
+            <path
+              fill="currentColor"
+              d="M12 21Q8.25 21 5.625 18.375Q3 15.75 3 12Q3 8.25 5.625 5.625Q8.25 3 12 3Q12.35 3 12.688 3.025Q13.025 3.05 13.35 3.1Q12.325 3.825 11.713 4.987Q11.1 6.15 11.1 7.5Q11.1 9.75 12.675 11.325Q14.25 12.9 16.5 12.9Q17.875 12.9 19.025 12.287Q20.175 11.675 20.9 10.65Q20.95 10.975 20.975 11.312Q21 11.65 21 12Q21 15.75 18.375 18.375Q15.75 21 12 21ZM12 19Q14.2 19 15.95 17.788Q17.7 16.575 18.5 14.625Q18 14.75 17.5 14.825Q17 14.9 16.5 14.9Q13.425 14.9 11.262 12.738Q9.1 10.575 9.1 7.5Q9.1 7 9.175 6.5Q9.25 6 9.375 5.5Q7.425 6.3 6.213 8.05Q5 9.8 5 12Q5 14.9 7.05 16.95Q9.1 19 12 19ZM11.75 12.25Q11.75 12.25 11.75 12.25Q11.75 12.25 11.75 12.25Q11.75 12.25 11.75 12.25Q11.75 12.25 11.75 12.25Q11.75 12.25 11.75 12.25Q11.75 12.25 11.75 12.25Q11.75 12.25 11.75 12.25Q11.75 12.25 11.75 12.25Q11.75 12.25 11.75 12.25Q11.75 12.25 11.75 12.25Q11.75 12.25 11.75 12.25Q11.75 12.25 11.75 12.25Z"
+            />
+          </svg>
+        </div>
+      </div>
+
+      <div class="page-wrapper" asscroll>
+        <section class="hero">
+          <div class="hero-wrapper">
+            <!-- Intro Stuff -->
+            <div class="intro-text">Welcome to my portfolio!</div>
+            <div class="arrow-svg-wrapper">
+              <svg xmlns="http://www.w3.org/2000/svg" height="24" width="24">
+                <path
+                  fill="currentColor"
+                  d="M12 14.95q-.2 0-.375-.063-.175-.062-.325-.212L6.675 10.05q-.275-.275-.262-.688.012-.412.287-.687.275-.275.7-.275.425 0 .7.275l3.9 3.9 3.925-3.925q.275-.275.688-.263.412.013.687.288.275.275.275.7 0 .425-.275.7l-4.6 4.6q-.15.15-.325.212-.175.063-.375.063Z"
+                />
+              </svg>
+            </div>
+
+            <div class="hero-main">
+              <h1 class="hero-main-title">Mustafa Khizar</h1>
+              <p class="hero-main-description">Computer Science Student</p>
+            </div>
+
+            <div class="hero-second">
+              <p class="hero-second-subheading first-sub">Frontend</p>
+              <p class="hero-second-subheading second-sub">Developer</p>
+            </div>
+          </div>
+        </section>
+
+        <div class="first-move section-margin"></div>
+
+        <section class="first-section section left">
+          <div class="progress-wrapper progress-bar-wrapper-left">
+            <div class="progress-bar"></div>
+          </div>
+
+          <div class="section-intro-wrapper">
+            <h1 class="section-title">
+              <span class="section-title-text">About Me</span>
+              <div class="section-title-decoration styleOne"></div>
+              <div class="section-title-decoration styleTwo"></div>
+              <div class="section-title-decoration styleThree"></div>
+            </h1>
+            <span class="section-number">01</span>
+          </div>
+
+          <div class="section-detail-wrapper">
+            <h3 class="section-heading">Hello!</h3>
+            <p class="section-text">
+              My name is <b>Mustafa Khizar</b>, and I am currently pursuing a
+              Bachelor’s in Computer Science. I specialize in crafting
+              high‑performance solutions with precision and creativity,
+              excelling at the intersection of logic and innovation. From
+              optimizing algorithms in C++ to building modern, responsive, and
+              scalable web applications, I transform complex problems into
+              elegant, efficient solutions.
+            </p>
+            <p class="section-text">
+              I have strong skills in C++ development, focusing on algorithm
+              optimization, data structures, and performance-driven programming.
+              Alongside this, I am experienced in web technologies and
+              passionate about building robust, user‑centric applications that
+              combine functionality and design seamlessly.
+            </p>
+            <p class="section-text">
+              I am eager to contribute to innovative software projects,
+              collaborate with other developers, and continuously grow my
+              expertise in full‑stack web development and high‑performance C++
+              solutions. With adaptability, technical knowledge, and a passion
+              for problem-solving, I aim to deliver meaningful and impactful
+              results.
+            </p>
+            <br />
+            <br />
+            <br />
+            <br />
+            <br />
+            <br />
+            <h1 id="education">EDUCATION</h1>
+            <br />
+            <br />
+            <br />
+            <br />
+            <br />
+            <h3 id="uni">
+              <a
+                href="https://www.linkedin.com/school/gcelt/?trk=public_profile_school"
+              >
+                <img
+                  src="./public/textures/clg_logo.png"
+                  alt="University Logo"
+                  class="uni-logo"
+                />
+                Punjab Group of Colleges, Hafizabad
+              </a>
+            </h3>
+            <br />
+            <br />
+            <blockquote>
+              <p class="para">
+                Faculty of Science (FSc) – Pre‑Engineering
+              </p>
+              <p>
+                Focused on foundational courses in mathematics, physics, and
+                chemistry, building strong analytical and problem-solving
+                skills. Developed a disciplined academic approach and a solid
+                base for engineering and technology studies.
+              </p>
+            </blockquote>
+            <br />
+            <br />
+            <h3 id="uni">
+              <a
+                href="https://www.linkedin.com/school/gcelt/?trk=public_profile_school"
+              >
+                <img
+                  src="./public/textures/uni_logo.png"
+                  alt="University Logo"
+                  class="uni-logo"
+                />
+                Arid Agriculture University, Rawalpindi
+              </a>
+            </h3>
+            <br />
+            <br />
+            <blockquote>
+              <p class="para">
+                Bachelor of Science in Computer Science (BSCS)
+              </p>
+              <p>
+                Focused on programming, data structures, algorithms, databases,
+                and software engineering principles. Gained practical experience
+                through projects in C++, web development, and core computer
+                science fundamentals.
+              </p>
+            </blockquote>
+            <br />
+            <br />
+          </div>
+        </section>
+
+        <div class="second-move section-margin"></div>
+
+        <section class="second-section section right">
+          <div class="progress-wrapper progress-bar-wrapper-right">
+            <div class="progress-bar blue-background"></div>
+          </div>
+
+          <div class="section-intro-wrapper blue-text blue-border">
+            <h1 class="section-title blue-text blue-border">
+              <span class="section-title-text blue-text">My Projects</span>
+              <div class="section-title-decoration styleOne blue-border"></div>
+              <div class="section-title-decoration styleTwo blue-border"></div>
+              <div
+                class="section-title-decoration styleThree blue-background blue-border"
+              ></div>
+            </h1>
+            <span class="section-number blue-text">02</span>
+          </div>
+
+          <div class="section-detail-wrapper">
+            <h3 class="section-heading">Data Structures & Algorithms Library</h3>
+            <p class="section-text">
+              A comprehensive C++ library implementing essential data structures and algorithms with optimized performance. 
+              Features include custom implementations of vectors, linked lists, binary trees, hash tables, and sorting algorithms.
+            </p>
+            <p class="section-text">
+              The library includes unit tests, performance benchmarks, and detailed documentation. All implementations 
+              follow modern C++ standards (C++17/20) with template-based generic programming for maximum reusability.
+            </p>
+            <br />
+            <div class="project-buttons">
+              <a href="https://github.com/username/dsa-library" class="project-btn github-btn" target="_blank">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                </svg>
+                GitHub
+              </a>
+              <a href="#" class="project-btn preview-btn" target="_blank">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
+                </svg>
+                Preview
+              </a>
+            </div>
+
+            <h3 class="section-heading">Memory Management System</h3>
+            <p class="section-text">
+              A custom memory allocator and garbage collector implementation in C++ for educational purposes. 
+              Features include heap management, memory leak detection, and performance optimization techniques.
+            </p>
+            <p class="section-text">
+              The system implements both stack and heap allocation strategies with detailed logging and 
+              debugging capabilities. Includes comprehensive test suites and performance benchmarks against 
+              standard library implementations.
+            </p>
+            <br />
+            <div class="project-buttons">
+              <a href="https://github.com/username/memory-manager" class="project-btn github-btn" target="_blank">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                </svg>
+                GitHub
+              </a>
+              <a href="#" class="project-btn preview-btn" target="_blank">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
+                </svg>
+                Preview
+              </a>
+            </div>
+
+            <h3 class="section-heading">Multi-threaded File Processor</h3>
+            <p class="section-text">
+              A high-performance file processing system using C++ threading libraries. Capable of processing 
+              large files concurrently with configurable thread pools and asynchronous I/O operations.
+            </p>
+            <p class="section-text">
+              Features include parallel file reading, data transformation pipelines, and result aggregation. 
+              Implements thread-safe data structures and includes comprehensive error handling and logging mechanisms.
+            </p>
+            <br />
+            <div class="project-buttons">
+              <a href="https://github.com/username/file-processor" class="project-btn github-btn" target="_blank">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                </svg>
+                GitHub
+              </a>
+              <a href="#" class="project-btn preview-btn" target="_blank">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
+                </svg>
+                Preview
+              </a>
+            </div>
+            <h3 class="section-heading">Game Engine Core</h3>
+            <p class="section-text">
+              A lightweight 2D game engine built from scratch in C++ using OpenGL. Features include sprite rendering, 
+              collision detection, input handling, and a component-based entity system.
+            </p>
+            <p class="section-text">
+              The engine supports multiple platforms and includes tools for asset management, scene editing, 
+              and performance profiling. Built with modern C++ practices and includes comprehensive documentation.
+            </p>
+            <br />
+            <div class="project-buttons">
+              <a href="https://github.com/username/game-engine" class="project-btn github-btn" target="_blank">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                </svg>
+                GitHub
+              </a>
+              <a href="#" class="project-btn preview-btn" target="_blank">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
+                </svg>
+                Preview
+              </a>
+            </div>
+          </div>
+        </section>
+
+        <div class="third-move section-margin"></div>
+
+        <section class="third-section section left">
+          <div class="progress-wrapper progress-bar-wrapper-left">
+            <div class="progress-bar green-background"></div>
+          </div>
+
+          <div class="section-intro-wrapper green-text green-border">
+            <h1 class="section-title green-text green-border">
+              <span class="section-title-text green-text">Work Experience</span>
+              <div class="section-title-decoration styleOne green-border"></div>
+              <div class="section-title-decoration styleTwo green-border"></div>
+              <div
+                class="section-title-decoration styleThree green-background green-border"
+              ></div>
+            </h1>
+            <span class="section-number green-text">03</span>
+          </div>
+
+          <div class="section-detail-wrapper">
+            <h3 class="section-heading">Self-Employed C++ Programmer</h3>
+            <p class="section-text">
+              <strong>Freelance C++ Developer</strong> [ 2025 - Present ]
+            </p>
+            <blockquote class="section-text">
+              Developing high-performance C++ applications and libraries. Creating custom data structures and algorithms. Building memory management systems and optimization tools. Working on multi-threaded applications and game engines. Providing consulting services for C++ development projects.
+            </blockquote>
+            <br />
+            <br />
+            
+            <h3 class="section-heading">Computer Science Student</h3>
+            <p class="section-text">
+              <strong>Bachelor of Science in Computer Science (BSCS)</strong> [ 2024 - Present ]
+            </p>
+            <blockquote class="section-text">
+              Pursuing comprehensive computer science education. Specializing in C++ programming and algorithm design. Studying data structures, software engineering, and system programming. Gaining hands-on experience through personal projects and coursework. Maintaining strong academic performance while building practical skills.
+            </blockquote>
+          </div>
+        </section>
+
+        <div class="second-move section-margin"></div>
+
+        <section class="second-section section right">
+          <div class="progress-wrapper progress-bar-wrapper-right">
+            <div class="progress-bar blue-background"></div>
+          </div>
+
+          <div class="section-intro-wrapper blue-text blue-border">
+            <h1 class="section-title blue-text blue-border">
+              <span class="section-title-text blue-text">CONTACT</span>
+              <div class="section-title-decoration styleOne blue-border"></div>
+              <div class="section-title-decoration styleTwo blue-border"></div>
+              <div
+                class="section-title-decoration styleThree blue-background blue-border"
+              ></div>
+            </h1>
+            <span class="section-number blue-text">04</span>
+          </div>
+
+          <div class="section-detail-wrapper">
+            <h3 class="section-heading">Linkedin</h3>
+            <p class="section-text">
+              Connect with me on LinkedIn to discuss C++ programming opportunities, 
+              software development projects, and technical collaborations. I actively 
+              share insights about modern C++ development, performance optimization, 
+              and software engineering best practices. I'm always interested in 
+              connecting with fellow developers and potential clients for freelance work.
+            </p>
+            <br />
+            <div class="contact-buttons">
+              <a href="https://www.linkedin.com/in/mdamiruddin" class="contact-btn linkedin-btn" target="_blank">
+                <svg class="contact-btn-icon" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+                </svg>
+                <span class="contact-btn-title">LinkedIn</span>
+              </a>
+            </div>
+
+            <h3 class="section-heading">Github</h3>
+            <p class="section-text">
+              I'm a passionate C++ developer and computer science student who actively 
+              contributes to open source projects. On GitHub, you'll find my C++ libraries, 
+              data structures implementations, and personal projects showcasing modern 
+              programming techniques. I'm always eager to collaborate on interesting 
+              projects and share knowledge with the developer community.
+            </p>
+            <br />
+            <div class="contact-buttons">
+              <a href="https://github.com/mdamiruddin" class="contact-btn github-btn-contact" target="_blank">
+                <svg class="contact-btn-icon" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                </svg>
+                <span class="contact-btn-title">GitHub</span>
+              </a>
+            </div>
+
+            <h3 class="section-heading">Instagram</h3>
+            <p class="section-text">
+              Follow me on Instagram for behind-the-scenes content of my coding journey, 
+              project updates, and daily life as a C++ programmer and computer science student. 
+              I share coding tips, project screenshots, and insights into the developer lifestyle.
+            </p>
+            <br />
+            <div class="contact-buttons">
+              <a href="https://www.instagram.com/yourusername" class="contact-btn instagram-btn" target="_blank">
+                <svg class="contact-btn-icon" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+                </svg>
+                <span class="contact-btn-title">Instagram</span>
+              </a>
+            </div>
+            
+            <div class="credit-section">
+              <p class="credit-text">
+               Crafted by <a href="https://saimshafique.com" class="credit-link" target="_blank">Saim Shafique</a>
+              </p>
+              <p class="credit-text">
+                Get inspiration from <a href="https://bokoko33.me/" class="credit-link" target="_blank">bokoko33</a>
+              </p>
+            </div>
+          </div>
+        </section>
+        <br /><br />
+      </div>
+    </div>
+    <script type="module" src="/main.js"></script>
+  </body>
+</html>
