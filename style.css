@@ -242,6 +242,7 @@ blockquote p {
   font-size: 24px;
   color: var(--color-text);
   transform: translate(-50%, -50%);
+  margin-left: 40px;
 }
 
 .arrow-svg-wrapper{
@@ -760,6 +761,7 @@ blockquote p {
     text-align: center;
     padding: 0 20px;
     width: 100%;
+    margin-left: 0px;
   }
 }
 
