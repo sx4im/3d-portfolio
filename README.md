@@ -240,7 +240,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 **⭐ Star this repository if you found it helpful!**
 
-Made with ❤️ by [Mustafa Khizar](https://github.com/your-username)
+Made with ❤️ by [Saim Shafique](https://github.com/sx4im)
 
 </div>
 
