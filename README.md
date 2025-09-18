@@ -7,8 +7,6 @@
 
 **A stunning 3D interactive portfolio showcasing modern web development skills**
 
-[🚀 Live Demo](https://your-portfolio-url.com) • [📧 Contact](mailto:your-email@example.com) • [💼 LinkedIn](https://linkedin.com/in/your-profile)
-
 </div>
 
 ---
@@ -224,23 +222,13 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **Fonts**: [Google Fonts - Poppins](https://fonts.google.com/specimen/Poppins)
 - **Icons**: Custom SVG icons
 
----
-
-## 📞 Contact
-
-**Mustafa Khizar** - Computer Science Student & C++ Developer
-
-[![LinkedIn](https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white)](https://linkedin.com/in/your-profile)
-[![GitHub](https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white)](https://github.com/your-username)
-[![Instagram](https://img.shields.io/badge/Instagram-E4405F?style=for-the-badge&logo=instagram&logoColor=white)](https://instagram.com/your-username)
-
----
 
 <div align="center">
 
 **⭐ Star this repository if you found it helpful!**
 
-Made with ❤️ by [Saim Shafique](https://github.com/sx4im)
+Made with ❤️ by Saim Shafique
+
 
 </div>
 
