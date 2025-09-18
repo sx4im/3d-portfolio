@@ -1,5 +1,4 @@
 # 🌟 Mustafa Khizar - 3D Portfolio
-
 <div align="center">
 
 ![Portfolio Banner](https://img.shields.io/badge/Portfolio-3D%20Interactive-ff69b4?style=for-the-badge&logo=three.js&logoColor=white)
@@ -229,6 +228,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 **⭐ Star this repository if you found it helpful!**
 
 Made with ❤️ by Saim Shafique
+
 
 </div>
 
