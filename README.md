@@ -1,6 +1,8 @@
-# 🌟 Mustafa Khizar - 3D Portfolio
-<div align="center">
 
+<div align="center">
+  
+# 🌟 Mustafa Khizar - 3D Portfolio
+  
 ![Portfolio Banner](https://img.shields.io/badge/Portfolio-3D%20Interactive-ff69b4?style=for-the-badge&logo=three.js&logoColor=white)
 ![Status](https://img.shields.io/badge/Status-Live-success?style=for-the-badge)
 ![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)
