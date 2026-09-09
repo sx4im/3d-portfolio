@@ -578,7 +578,7 @@ export class Composer {
   renderToolsMenu() {
     clear(this.toolsMenu);
     const items = [
-      { kind: "search", ic: "globe", label: "Web search", desc: this.autoSearch ? "On, searches when needed" : "Off for this chat", active: this.autoSearch && !this.isImageMode() && !this.studyMode },
+      { kind: "search", ic: "globe", label: "Web search", desc: this.autoSearch ? "Reads web pages when needed" : "Off for this chat", active: this.autoSearch && !this.isImageMode() && !this.studyMode },
       { kind: "generate", ic: "imageSparkles", label: "Create image", desc: "Generate an image with Iris", active: this.isImageMode() && !this.studyMode },
       { kind: "study", ic: "helpStudy", label: "Learning Mode", desc: "Test yourself with quizzes", active: this.studyMode },
     ];

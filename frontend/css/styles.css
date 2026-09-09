@@ -4182,24 +4182,13 @@ body:has(.chat-page.is-empty) .tools-menu,
   color: var(--ink);
 }
 
-/* Reading a pasted link runs the working orb at 64px, so the row needs more
-   breathing room than the 16px globe used for a web search. */
-.search-bubble.reading {
-  gap: 14px;
-  padding: 4px 16px 4px 6px;
-}
-
 /* ---------- Search card ----------
    The record of a web search: the query, the pages Bimo read, and the round
-   trip time. Shown live as skeleton rows, then kept above the answer. */
+   trip time. Chromeless by design — it reads as a trail of steps in the
+   conversation, not a panel sitting on top of it. */
 .search-card {
   max-width: 100%;
-  margin: 2px 0 10px;
-  padding: 16px 18px;
-  border: 1px solid var(--hairline-strong);
-  border-radius: var(--r-lg);
-  background: var(--surface-card);
-  box-shadow: var(--shadow-card);
+  margin: 2px 0 14px;
   animation: search-bubble-in 0.35s ease-out both;
 }
 
@@ -4241,7 +4230,8 @@ body:has(.chat-page.is-empty) .tools-menu,
   padding: 0;
 }
 
-/* Each result is marked by a small ring in the left gutter. */
+/* Each result is a step on a trail: a ring in the left gutter, joined to the
+   next ring by a hairline. ::before is the ring, ::after the connector. */
 .search-result {
   position: relative;
   padding: 0 0 0 26px;
@@ -4262,6 +4252,21 @@ body:has(.chat-page.is-empty) .tools-menu,
   height: 7px;
   border: 1px solid var(--hairline-strong);
   border-radius: 50%;
+  background: var(--canvas);
+}
+
+.search-result::after {
+  content: "";
+  position: absolute;
+  left: 6px;
+  top: 14px;
+  bottom: -17px;
+  width: 1px;
+  background: var(--hairline);
+}
+
+.search-result:last-child::after {
+  display: none;
 }
 
 .search-result-head {
@@ -4298,17 +4303,22 @@ body:has(.chat-page.is-empty) .tools-menu,
   overflow-wrap: anywhere;
 }
 
-.search-card-foot {
+/* Last step on the trail: the expand toggle, with the timing on the right. */
+.search-result.search-foot {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   justify-content: space-between;
   gap: 12px;
-  margin-top: 12px;
-  padding-left: 26px;
+}
+
+/* Timing on its own, for a search with nothing left to expand. */
+.search-card-foot {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 10px;
 }
 
 .search-more {
-  position: relative;
   padding: 0;
   border: 0;
   background: none;
@@ -4317,17 +4327,6 @@ body:has(.chat-page.is-empty) .tools-menu,
   color: var(--muted);
   cursor: pointer;
   transition: color 0.15s ease;
-}
-
-.search-more::before {
-  content: "";
-  position: absolute;
-  left: -23px;
-  top: 7px;
-  width: 7px;
-  height: 7px;
-  border: 1px solid var(--hairline-strong);
-  border-radius: 50%;
 }
 
 .search-more:hover {

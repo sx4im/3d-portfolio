@@ -5,7 +5,7 @@
 
 import { el } from "../utils.js?v=30";
 import { icon } from "../icons.js?v=48";
-import { searchOrb } from "./orb.js?v=2";
+import { searchOrb } from "./orb.js?v=3";
 
 const COLLAPSED_COUNT = 3;
 
@@ -114,36 +114,46 @@ export function searchCard({ query = "", results = [], elapsedMs = null, searchi
     ]));
   }
 
-  const shown = results.slice(0, COLLAPSED_COUNT);
-  for (const r of shown) list.append(resultRow(r));
+  for (const r of results.slice(0, COLLAPSED_COUNT)) list.append(resultRow(r));
 
+  const elapsed = formatElapsed(elapsedMs);
   const hidden = results.slice(COLLAPSED_COUNT);
-  const foot = [];
+
   if (hidden.length) {
-    let expanded = false;
+    // The toggle is the last item on the trail, so it carries a bullet of its
+    // own and the connecting line runs all the way down to it.
+    const collapsedLabel = `+ ${hidden.length} more result${hidden.length === 1 ? "" : "s"}`;
+    let rows = [];
     const more = el("button", {
       type: "button",
       class: "search-more",
       "aria-expanded": "false",
-      text: `+ ${hidden.length} more result${hidden.length === 1 ? "" : "s"}`,
+      text: collapsedLabel,
       onclick: () => {
-        expanded = !expanded;
+        const expanded = rows.length === 0;
         more.setAttribute("aria-expanded", String(expanded));
         if (expanded) {
-          for (const r of hidden) list.append(resultRow(r));
+          rows = hidden.map(resultRow);
+          for (const row of rows) list.insertBefore(row, foot);
           more.textContent = "Show fewer results";
         } else {
-          for (const node of [...list.children].slice(COLLAPSED_COUNT)) node.remove();
-          more.textContent = `+ ${hidden.length} more result${hidden.length === 1 ? "" : "s"}`;
+          for (const row of rows) row.remove();
+          rows = [];
+          more.textContent = collapsedLabel;
         }
       },
     });
-    foot.push(more);
+    const foot = el("li", { class: "search-result search-foot" }, [
+      more,
+      ...(elapsed ? [el("span", { class: "search-elapsed", text: elapsed })] : []),
+    ]);
+    list.append(foot);
+  } else if (elapsed) {
+    // Nothing left to expand, so the timing stands alone without a bullet.
+    card.append(el("div", { class: "search-card-foot" }, [
+      el("span", { class: "search-elapsed", text: elapsed }),
+    ]));
   }
-
-  const elapsed = formatElapsed(elapsedMs);
-  if (elapsed) foot.push(el("span", { class: "search-elapsed", text: elapsed }));
-  if (foot.length) card.append(el("div", { class: "search-card-foot" }, foot));
 
   return card;
 }

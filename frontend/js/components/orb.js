@@ -38,6 +38,6 @@ export function searchOrb(size = 16) {
 }
 
 /** Page-reading orb (working — churns while a pasted link is fetched). */
-export function readingOrb(size = 64) {
+export function readingOrb(size = 16) {
   return createOrb({ state: "working", size, ariaLabel: "Reading the webpage" });
 }

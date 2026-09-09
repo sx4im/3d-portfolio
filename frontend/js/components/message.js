@@ -1,6 +1,6 @@
 import { el, clear } from "../utils.js?v=30";
-import { thoughtOrb } from "./orb.js?v=2";
-import { searchCard } from "./search-card.js?v=1";
+import { thoughtOrb } from "./orb.js?v=3";
+import { searchCard } from "./search-card.js?v=2";
 import { icon, formatDocIcon } from "../icons.js?v=30";
 import { avatar } from "./avatar.js?v=30";
 import { renderMarkdown } from "./markdown.js?v=31";
