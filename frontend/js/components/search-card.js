@@ -1,6 +1,6 @@
 // Inline record of a web search Bimo ran for a turn: the query it settled on,
 // the pages it read, and how long the round trip took. The same card covers
-// both phases — skeleton rows while the search is in flight, then the results
+// both phases — placeholder rows while the search is in flight, then the results
 // — so it fills in rather than being swapped out under the reader.
 
 import { el } from "../utils.js?v=30";
@@ -65,10 +65,12 @@ function resultRow(result) {
   return el("li", { class: "search-result" }, children);
 }
 
-function skeletonRow() {
-  return el("li", { class: "search-result skeleton" }, [
-    el("div", { class: "search-result-head" }, [el("span", { class: "skeleton-bar wide" })]),
-    el("p", { class: "search-result-snippet" }, [el("span", { class: "skeleton-bar" })]),
+// Note: "pending" rather than the global .skeleton utility, which paints a
+// full-width shimmer of its own and would sit behind these bars.
+function pendingRow() {
+  return el("li", { class: "search-result pending" }, [
+    el("div", { class: "search-result-head" }, [el("span", { class: "pending-bar wide" })]),
+    el("p", { class: "search-result-snippet" }, [el("span", { class: "pending-bar" })]),
   ]);
 }
 
@@ -104,7 +106,7 @@ export function searchCard({ query = "", results = [], elapsedMs = null, searchi
   ]);
 
   if (searching) {
-    list.append(skeletonRow(), skeletonRow(), skeletonRow());
+    list.append(pendingRow(), pendingRow(), pendingRow());
     return card;
   }
 

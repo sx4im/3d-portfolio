@@ -4340,28 +4340,65 @@ body:has(.chat-page.is-empty) .tools-menu,
   opacity: 0.7;
 }
 
-/* Placeholder rows keep the card's height steady while results are pending. */
-.skeleton-bar {
+/* Placeholder rows hold the trail's shape while results are pending. They sit
+   further apart than settled results — thin bars packed tight read as noise. */
+.search-result.pending+.search-result.pending {
+  margin-top: 20px;
+}
+
+.search-result.pending::before {
+  top: 2px;
+}
+
+.search-result.pending::after {
+  top: 10px;
+  bottom: -21px;
+}
+
+.search-result.pending .search-result-snippet {
+  margin-top: 9px;
+}
+
+.pending-bar {
   display: block;
-  height: 9px;
-  border-radius: 4px;
+  height: 11px;
+  border-radius: 5px;
   background: linear-gradient(90deg,
       var(--hairline-strong) 25%,
       var(--hairline) 50%,
       var(--hairline-strong) 75%);
   background-size: 200% 100%;
-  animation: skeleton-sweep 1.4s ease-in-out infinite;
+  animation: pending-sweep 1.4s ease-in-out infinite;
 }
 
-.search-result.skeleton .skeleton-bar {
-  width: 62%;
+.search-result.pending .pending-bar {
+  width: 58%;
 }
 
-.search-result.skeleton .skeleton-bar.wide {
-  width: 84%;
+.search-result.pending .pending-bar.wide {
+  width: 88%;
 }
 
-@keyframes skeleton-sweep {
+/* Uneven widths and offset sweeps so the three rows don't pulse as a block. */
+.search-result.pending:nth-child(2) .pending-bar.wide {
+  width: 71%;
+}
+
+.search-result.pending:nth-child(2) .pending-bar {
+  width: 66%;
+  animation-delay: 0.14s;
+}
+
+.search-result.pending:nth-child(3) .pending-bar.wide {
+  width: 81%;
+}
+
+.search-result.pending:nth-child(3) .pending-bar {
+  width: 47%;
+  animation-delay: 0.28s;
+}
+
+@keyframes pending-sweep {
   from {
     background-position: 200% 0;
   }
@@ -4419,7 +4456,7 @@ body:has(.chat-page.is-empty) .tools-menu,
     animation: none;
   }
 
-  .skeleton-bar {
+  .pending-bar {
     animation: none;
   }
 
