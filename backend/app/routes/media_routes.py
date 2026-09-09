@@ -10,7 +10,7 @@ import time
 import requests
 from flask import Blueprint, Response, jsonify, request
 
-from .. import image_safety, nvidia_client, riva_transcribe, riva_tts, store
+from .. import image_safety, nvidia_client, riva_transcribe, riva_tts, search_router, store
 from ..auth import require_user
 from ..config import (
     IMAGE_MODEL_ID,
@@ -267,7 +267,7 @@ def tts(user):  # noqa: ARG001
         return bad_request(f"TTS failed: {exc}", 502)
 
 
-# ---------- Web Search (Tavily) ----------
+# ---------- Web Search (TinyFish) ----------
 
 @media_bp.post("/search")
 @limiter.limit("20 per minute")
@@ -277,72 +277,19 @@ def search(user):  # noqa: ARG001
     query = payload.get("query")
     if not isinstance(query, str) or not query.strip():
         return bad_request("query is required", 422)
-    api_key = os.environ.get("TAVILY_API_KEY")
-    if not api_key:
+    if not os.environ.get("TINYFISH_API_KEY"):
         return bad_request("web search is not configured", 503)
 
     q = query.strip()
-    lower_q = q.lower()
-    is_live = any(
-        kw in lower_q for kw in (
-            "live", "score", "right now", "now", "today", "tonight",
-            "latest", "current", "currently", "this morning", "this evening",
-            "breaking", "update", "price", "stock", "weather",
-        )
-    )
-    body = {
-        "api_key": api_key,
-        "query": q,
-        "search_depth": "advanced",
-        "max_results": 8 if is_live else 5,
-        "include_answer": "advanced",
-    }
-    if is_live:
-        body["topic"] = "news"
-        body["days"] = 1
-        body["time_range"] = "day"
-
-    def _tavily(p):
-        resp = requests.post("https://api.tavily.com/search", json=p, timeout=12)
-        resp.raise_for_status()
-        return resp.json()
-
-    plain_body = {
-        "api_key": api_key,
-        "query": q,
-        "search_depth": "advanced",
-        "max_results": 8,
-        "include_answer": "advanced",
-    }
     try:
-        data = _tavily(body)
-        if is_live and not (data.get("results") or []):
-            data = _tavily(plain_body)
-    except requests.RequestException as exc:
-        logger.warning("search: Tavily request failed: %s", exc)
-        if is_live and body != plain_body:
-            try:
-                data = _tavily(plain_body)
-            except requests.RequestException as exc2:
-                logger.warning("search: Tavily retry failed: %s", exc2)
-                return bad_request("web search failed", 502)
-        else:
-            return bad_request("web search failed", 502)
-
-    results = data.get("results") or []
-    top = [
-        {
-            "title": r.get("title", ""),
-            "content": r.get("content", ""),
-            "url": r.get("url", ""),
-            "published_date": r.get("published_date", ""),
-        }
-        for r in results[:8]
-    ]
-    return jsonify({"answer": data.get("answer", ""), "results": top, "live": is_live})
+        results = search_router.fetch_results(q, timeout=12)
+    except (requests.RequestException, ValueError) as exc:
+        logger.warning("search: TinyFish request failed: %s", exc)
+        return bad_request("web search failed", 502)
+    return jsonify({"answer": "", "results": results, "live": search_router.is_live_query(q)})
 
 
-# ---------- Web Scraping (Firecrawl) ----------
+# ---------- Web Scraping (TinyFish Fetch) ----------
 
 @media_bp.post("/scrape")
 @limiter.limit("20 per minute")
@@ -352,7 +299,7 @@ def scrape(user):  # noqa: ARG001
     url = payload.get("url")
     if not isinstance(url, str) or not url.strip():
         return bad_request("url is required", 422)
-    api_key = os.environ.get("FIRECRAWL_API_KEY")
+    api_key = os.environ.get("TINYFISH_API_KEY")
     if not api_key:
         return bad_request("web scraping is not configured", 503)
 
@@ -362,27 +309,31 @@ def scrape(user):  # noqa: ARG001
 
     try:
         resp = requests.post(
-            "https://api.firecrawl.dev/v2/scrape",
-            json={"url": target_url, "formats": ["markdown"], "onlyMainContent": True},
-            headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+            "https://api.fetch.tinyfish.ai",
+            json={"urls": [target_url], "format": "markdown"},
+            headers={"X-API-Key": api_key, "Content-Type": "application/json"},
             timeout=20,
         )
         resp.raise_for_status()
         data = resp.json()
     except requests.RequestException as exc:
-        logger.warning("scrape: Firecrawl request failed: %s", exc)
+        logger.warning("scrape: TinyFish request failed: %s", exc)
         return bad_request("web scraping failed", 502)
 
-    scrape_data = data.get("data") or {}
-    markdown = scrape_data.get("markdown") or ""
-    metadata = scrape_data.get("metadata") or {}
-    title = metadata.get("title") or ""
-    description = metadata.get("description") or ""
+    results = data.get("results") or []
+    if not results:
+        return bad_request("web scraping failed", 502)
+
+    item = results[0]
+    markdown = item.get("text") or ""
+    title = item.get("title") or ""
+    description = item.get("description") or ""
+    final_url = item.get("final_url") or item.get("url") or target_url
 
     return jsonify({
         "success": True,
         "markdown": markdown,
         "title": title,
         "description": description,
-        "url": target_url,
+        "url": final_url,
     })

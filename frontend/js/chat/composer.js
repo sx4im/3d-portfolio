@@ -10,7 +10,7 @@ import { toast } from "../components/toast.js?v=58";
 import { openImageModal } from "../components/image-modal.js?v=18";
 import { blobToWav16kMono } from "../audio-wav.js?v=30";
 import { getAuth } from "../auth.js?v=31";
-import * as api from "../api.js?v=56";
+import * as api from "../api.js?v=60";
 
 export const URL_REGEX = /(?:https?:\/\/|www\.)[^\s()<>]+(?:\([\w\d]+\)|(?:[^\s`!()\[\]{};:\x27".,<>?«»“”‘’]))|\b[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*\.[a-zA-Z]{2,}(?::\d+)?(?:[\/?#][^\s()<>]+(?:\([\w\d]+\)|(?:[^\s`!()\[\]{};:\x27".,<>?«»“”‘’])))?/gi;
 
@@ -124,7 +124,10 @@ export class Composer {
     this.defaultModel = "thinking";
     this.extendedThinking = localStorage.getItem("bimo-extended-thinking") === "1";
     this.reasoningEffort = this.getReasoningEffort();
-    this.searchEnabled = false;
+    // Web search is on by default and autonomous: Bimo decides per turn
+    // whether a question actually needs live results. Switching it off opts
+    // the conversation out of searching entirely.
+    this.autoSearch = true;
     this.studyMode = false;
     this.isGenerating = false;
     this.isImageGenerating = false;
@@ -452,7 +455,7 @@ export class Composer {
           attachments: this.pendingAttachments.slice(),
           model: this.currentModel,
           reasoningEffort: this.getReasoningEffort(),
-          searchEnabled: this.searchEnabled,
+          autoSearch: this.autoSearch,
           studyMode: this.studyMode,
         });
         this.pendingAttachments = [];
@@ -575,7 +578,7 @@ export class Composer {
   renderToolsMenu() {
     clear(this.toolsMenu);
     const items = [
-      { kind: "search", ic: "globe", label: "Web search", desc: "Answer using live results", active: this.searchEnabled && !this.isImageMode() && !this.studyMode },
+      { kind: "search", ic: "globe", label: "Web search", desc: this.autoSearch ? "On, searches when needed" : "Off for this chat", active: this.autoSearch && !this.isImageMode() && !this.studyMode },
       { kind: "generate", ic: "imageSparkles", label: "Create image", desc: "Generate an image with Iris", active: this.isImageMode() && !this.studyMode },
       { kind: "study", ic: "helpStudy", label: "Learning Mode", desc: "Test yourself with quizzes", active: this.studyMode },
     ];
@@ -624,27 +627,27 @@ export class Composer {
 
   applyTool(kind) {
     if (kind === "search") {
-      this.searchEnabled = !this.searchEnabled;
-      if (this.searchEnabled && this.isImageMode()) {
+      this.autoSearch = !this.autoSearch;
+      if (this.autoSearch && this.isImageMode()) {
         this.currentModel = this.defaultModel || "thinking";
       }
-      if (this.searchEnabled && this.studyMode) { this.studyMode = false; }
+      // Leave study mode, otherwise the toggle the user just tapped stays
+      // greyed out and appears to do nothing.
+      if (this.autoSearch && this.studyMode) { this.studyMode = false; }
     } else if (kind === "generate") {
       this.currentModel = "image";
-      this.searchEnabled = false;
       this.studyMode = false;
     } else if (kind === "study") {
       this.studyMode = !this.studyMode;
       if (this.studyMode) {
         this.currentModel = "thinking";
-        this.searchEnabled = false;
       }
     }
     this.updateComposerForMode();
     this.renderModelBadge();
     this.renderToolsMenu();
     this.syncSendEnabled();
-    this.onToolsChange?.({ searchEnabled: this.searchEnabled, studyMode: this.studyMode, model: this.currentModel });
+    this.onToolsChange?.({ autoSearch: this.autoSearch, studyMode: this.studyMode, model: this.currentModel });
   }
 
   updateComposerForMode() {
@@ -752,7 +755,6 @@ export class Composer {
     this.closeModelDropdown();
     if (!picked) return;
     this.currentModel = picked;
-    if (picked === "image") this.searchEnabled = false;
     this.reasoningEffort = this.getReasoningEffort();
     this.renderModelBadge();
     this.renderToolsMenu();

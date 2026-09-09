@@ -36,3 +36,8 @@ export function thoughtOrb(size = 14) {
 export function searchOrb(size = 16) {
   return createOrb({ state: "searching", size, ariaLabel: "Searching the web" });
 }
+
+/** Page-reading orb (working — churns while a pasted link is fetched). */
+export function readingOrb(size = 64) {
+  return createOrb({ state: "working", size, ariaLabel: "Reading the webpage" });
+}

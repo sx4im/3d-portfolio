@@ -100,12 +100,14 @@ export async function updateConversation(token, conversationId, patch) {
  * events with one of these `type`s:
  *   - "conversation"      conversation row (whether new or existing)
  *   - "user_message"      the persisted user message row
+ *   - "searching"         { query } Bimo chose to search; results are pending
+ *   - "search_complete"   { count, elapsed_ms, results } search finished (count may be 0)
  *   - "token"             { delta, content } incremental text
  *   - "assistant_message" the persisted assistant message row (final)
  *   - "error"             { detail }
  */
 export async function streamChat(token, payload, handlers = {}) {
-  const { onConversation, onUserMessage, onToken, onReasoningToken, onAssistantMessage, onComplete, onError, signal } = handlers;
+  const { onConversation, onUserMessage, onToken, onReasoningToken, onAssistantMessage, onComplete, onError, onSearching, onSearchComplete, signal } = handlers;
   
   // Extract incognito flag if present so we don't send it to the normal payload
   const isIncognito = !!payload.incognito;
@@ -192,6 +194,17 @@ export async function streamChat(token, payload, handlers = {}) {
         case "user_message":
           onUserMessage?.(event.data);
           break;
+        case "searching":
+          // Bimo decided this turn needs live results and is fetching them.
+          onSearching?.({ query: event.query || "" });
+          break;
+        case "search_complete":
+          onSearchComplete?.({
+            count: event.count || 0,
+            elapsedMs: event.elapsed_ms ?? null,
+            results: event.results || [],
+          });
+          break;
         case "token":
           onToken?.(event.data);
           break;
@@ -244,16 +257,16 @@ export async function generateImage(token, payload, signal) {
 
 // ---------- web search ----------
 
-// Returns { answer, results } from Tavily — `answer` is a synthesized current
-// summary, `results` is up to 5 { title, content, url, published_date }. The
-// gateway holds the Tavily key server-side; the browser only sees the query.
+// Returns { answer, results } from TinyFish Search — `results` is up to 8
+// { title, content, url, published_date }. The gateway holds the TinyFish
+// key server-side; the browser only sees the query.
 export async function searchWeb(token, query, signal) {
   return request("/search", { method: "POST", token, body: { query }, signal });
 }
 
-// ---------- web scraping (Firecrawl) ----------
+// ---------- web scraping (TinyFish Fetch) ----------
 
-// Scrapes a webpage with Firecrawl and returns { markdown, title, description, url }.
+// Scrapes a webpage with TinyFish and returns { markdown, title, description, url }.
 export async function scrapeUrl(token, url, signal) {
   return request("/scrape", { method: "POST", token, body: { url }, signal });
 }

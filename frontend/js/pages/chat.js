@@ -12,11 +12,11 @@ import { toast } from "../components/toast.js?v=58";
 import { whenMarkdownReady } from "../components/markdown.js?v=31";
 import { openVoiceOverlay } from "../components/voice-overlay.js?v=43";
 import { openDocViewerModal } from "../components/doc-modal.js?v=3";
-import * as api from "../api.js?v=57";
+import * as api from "../api.js?v=60";
 
-import { Composer, DEFAULT_AVAILABLE_MODELS, extractUrls } from "../chat/composer.js?v=22";
-import { MessageFeed } from "../chat/message-feed.js?v=27";
-import { StreamHandler, getRandomPhrase } from "../chat/stream-handler.js?v=5";
+import { Composer, DEFAULT_AVAILABLE_MODELS, extractUrls } from "../chat/composer.js?v=24";
+import { MessageFeed } from "../chat/message-feed.js?v=29";
+import { StreamHandler, getRandomPhrase } from "../chat/stream-handler.js?v=8";
 import { STUDY_SYSTEM_PROMPT } from "../chat/study-mode.js?v=2";
 import {
   detectExportIntent,
@@ -31,39 +31,6 @@ import {
 
 function uid(prefix = "tmp") {
   return `${prefix}_${Math.random().toString(36).slice(2, 10)}`;
-}
-
-function buildSearchContext(answer, results, originalMessage) {
-  const today = new Date().toLocaleDateString("en-US", {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
-  const sources = results
-    .map((r) => {
-      const when = r.published_date ? ` (published ${r.published_date})` : "";
-      return `[${r.title}](${r.url})${when}\n${r.content}`;
-    })
-    .join("\n\n");
-  const now = new Date().toLocaleString("en-US", {
-    weekday: "long", year: "numeric", month: "long", day: "numeric",
-    hour: "numeric", minute: "2-digit", timeZoneName: "short",
-  });
-  const summary = answer ? `Most recent synthesized finding:\n${answer}\n\n` : "";
-  return (
-    `The current date and time is ${now} (today is ${today}). The web search ` +
-    `results below are LIVE and authoritative — trust them over your own ` +
-    `training data, which is out of date.\n\n` +
-    `IMPORTANT for time-sensitive questions (live scores, prices, weather, ` +
-    `breaking news): use ONLY the MOST RECENT figure available in the sources. ` +
-    `If several sources disagree, prefer the one with the latest published ` +
-    `date/timestamp, and ignore older snapshots. State the figure as the ` +
-    `current value and, if useful, note how recent it is. Do not present an ` +
-    `older cached number as the current one.\n\n` +
-    `${summary}Sources (newer first where dated):\n${sources}\n\n` +
-    `User question: ${originalMessage}`
-  );
 }
 
 function buildScrapeContext(scrapedItems, originalMessage) {
@@ -87,7 +54,7 @@ function buildScrapeContext(scrapedItems, originalMessage) {
 
   return (
     `The current date and time is ${now} (today is ${today}). The webpage content ` +
-    `below was scraped live using Firecrawl for the requested URL(s). It is authoritative ` +
+    `below was fetched live for the requested URL(s). It is authoritative ` +
     `and reflects the live page.\n\n` +
     `${docs}\n\n` +
     `User message: ${originalMessage}`
@@ -112,10 +79,15 @@ export async function renderChat({ id, incognito }) {
   let loading = false;
   let availableModels = DEFAULT_AVAILABLE_MODELS;
   let defaultModel = "thinking";
-  let searchingLabel = "Searching the web";
+  let searchingLabel = "Reading webpage…";
+  let searchVariant = "search"; // "search" (web search) | "reading" (pasted link)
 
   let enteringId = null;
   let searching = false;
+  let searchPreamble = "";
+  // The live turn's search card: null, then in-flight, then filled with
+  // results. Handed to the assistant message once the answer lands.
+  let searchCardData = null;
   let imageGenerating = false;
   let imagePollTimer = null;
   let voiceHandle = null;
@@ -249,6 +221,25 @@ export async function renderChat({ id, incognito }) {
         messageFeed.updateStreamingBubble(streamingText, streamingReasoning);
       }
     },
+    onSearching: ({ query, preamble }) => {
+      searching = true;
+      searchPreamble = preamble || "";
+      searchVariant = "search";
+      searchCardData = { query: query || "", results: [], elapsedMs: null, searching: true };
+      renderUI();
+      messageFeed.follower.attach();
+      messageFeed.scrollToBottom();
+    },
+    onSearchComplete: ({ results, elapsedMs }) => {
+      searching = false;
+      searchCardData = {
+        query: searchCardData?.query || "",
+        results: Array.isArray(results) ? results : [],
+        elapsedMs: elapsedMs ?? null,
+        searching: false,
+      };
+      renderUI();
+    },
     onStatusChange: ({ phrase, reasoningElapsed, reasoningDone }) => {
       if (phrase) messageFeed.setStatusText(phrase);
       if (reasoningElapsed != null) {
@@ -262,6 +253,12 @@ export async function renderChat({ id, incognito }) {
       messageFeed.setStatusText("Done");
     },
     onAssistantMessage: (m) => {
+      // Hand the card to the reply it produced so it stays above the answer
+      // instead of trailing below it once the message lands.
+      if (searchCardData && !searchCardData.searching) {
+        m.search = searchCardData;
+        searchCardData = null;
+      }
       messages.push(m);
       enteringId = m.id;
       composer.isGenerating = false;
@@ -294,7 +291,7 @@ export async function renderChat({ id, incognito }) {
         toast(err.message || "Couldn't switch model", { tone: "error" });
       }
     },
-    onToolsChange: ({ searchEnabled, studyMode, model }) => {
+    onToolsChange: ({ autoSearch, studyMode, model }) => {
       if (id && conversation && model !== conversation.model) {
         api.updateConversation(auth.token, id, { model }).catch(() => {});
       }
@@ -387,6 +384,9 @@ export async function renderChat({ id, incognito }) {
       generating: composer.isGenerating,
       searching,
       searchingLabel,
+      searchVariant,
+      searchCardData,
+      searchPreamble,
       imageGenerating,
       streamingText: streamHandler.streamingText,
       streamingReasoning: streamHandler.streamingReasoning,
@@ -453,7 +453,7 @@ export async function renderChat({ id, incognito }) {
   }
 
   async function handleComposerSubmit(turn) {
-    const { text, attachments, model, reasoningEffort, searchEnabled, studyMode } = turn;
+    const { text, attachments, model, reasoningEffort, studyMode, autoSearch = true } = turn;
 
     if (model === "image") {
       await sendImageMessage(text, attachments);
@@ -487,6 +487,7 @@ export async function renderChat({ id, incognito }) {
     };
     messages.push(optimisticUser);
     enteringId = optimisticUser.id;
+    searchPreamble = "";
     streamHandler.streamingText = "";
     streamHandler.streamingReasoning = "";
     streamHandler.currentPhrase = getRandomPhrase();
@@ -503,6 +504,7 @@ export async function renderChat({ id, incognito }) {
     const urls = extractUrls(text);
     if (urls.length > 0) {
       searching = true;
+      searchVariant = "reading";
       searchingLabel = urls.length === 1 ? "Reading webpage…" : "Reading links…";
       renderUI();
       messageFeed.follower.attach();
@@ -525,37 +527,14 @@ export async function renderChat({ id, incognito }) {
 
         if (scraped.length > 0) {
           llmMessage = buildScrapeContext(scraped, text);
-        } else if (searchEnabled) {
-          searchingLabel = "Searching the web";
-          renderUI();
-          const res = await api.searchWeb(auth.token, text);
-          const results = res?.results || [];
-          if (res?.answer || results.length) {
-            llmMessage = buildSearchContext(res.answer, results, text);
-          }
         }
+        // Nothing scraped leaves llmMessage untouched, so the backend is free
+        // to fall back to its own web search for this turn.
       } catch (err) {
-        console.warn("web scraping/search failed:", err.message);
+        console.warn("web scraping failed:", err.message);
       } finally {
         searching = false;
-        searchingLabel = "Searching the web";
-      }
-    } else if (searchEnabled && text) {
-      searching = true;
-      searchingLabel = "Searching the web";
-      renderUI();
-      messageFeed.follower.attach();
-      messageFeed.scrollToBottom();
-      try {
-        const res = await api.searchWeb(auth.token, text);
-        const results = res?.results || [];
-        if (res?.answer || results.length) {
-          llmMessage = buildSearchContext(res.answer, results, text);
-        }
-      } catch (err) {
-        console.warn("web search failed:", err.message);
-      } finally {
-        searching = false;
+        searchVariant = "search";
       }
     }
 
@@ -574,6 +553,7 @@ export async function renderChat({ id, incognito }) {
           model: activeModel,
           system_prompt: studyMode ? STUDY_SYSTEM_PROMPT : (conversation?.system_prompt || undefined),
           reasoning_effort: reasoningEffort || composer.getReasoningEffort(activeModel),
+          auto_search: autoSearch && !studyMode,
           incognito,
         },
         streamId,
@@ -583,6 +563,11 @@ export async function renderChat({ id, incognito }) {
         messages = messages.filter((x) => x.id !== optimisticUser.id);
       }
     } finally {
+      // The preamble belongs to the live turn only. The card has normally been
+      // handed to the assistant message by now; this clears it after a turn
+      // that ended without one (error or abort).
+      searchPreamble = "";
+      searchCardData = null;
       composer.isGenerating = false;
       composer.syncSendEnabled();
       renderUI();
@@ -712,7 +697,7 @@ export async function renderChat({ id, incognito }) {
         attachments: [],
         model: composer.currentModel,
         reasoningEffort: composer.getReasoningEffort(),
-        searchEnabled: composer.searchEnabled,
+        autoSearch: composer.autoSearch,
         studyMode: composer.studyMode,
       });
     }
@@ -738,7 +723,7 @@ export async function renderChat({ id, incognito }) {
         attachments: userMsg.attachments || [],
         model: composer.currentModel,
         reasoningEffort: composer.getReasoningEffort(),
-        searchEnabled: composer.searchEnabled,
+        autoSearch: composer.autoSearch,
         studyMode: composer.studyMode,
       });
     }
@@ -787,7 +772,7 @@ export async function renderChat({ id, incognito }) {
             attachments: [],
             model: "aeon",
             reasoningEffort: "low",
-            searchEnabled: false,
+            autoSearch: false,
             studyMode: false,
           });
           for (let i = messages.length - 1; i >= 0; i--) {

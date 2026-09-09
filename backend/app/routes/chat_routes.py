@@ -13,7 +13,7 @@ import uuid
 
 from flask import Blueprint, Response, request, stream_with_context
 
-from .. import document_processor, nvidia_client, store
+from .. import document_processor, nvidia_client, search_router, store
 from ..auth import require_user
 from ..config import (
     ALL_VALID_MODEL_IDS,
@@ -164,7 +164,13 @@ def chat(user):
     conversation_id = payload.get("conversation_id")
     augmented_message = payload.get("augmented_message")
     stream_id = payload.get("stream_id")
+    auto_search = payload.get("auto_search", True)
+    force_search = payload.get("force_search", False)
 
+    if not isinstance(auto_search, bool):
+        return bad_request("auto_search must be a boolean", 422)
+    if not isinstance(force_search, bool):
+        return bad_request("force_search must be a boolean", 422)
     if stream_id is not None and (not isinstance(stream_id, str) or len(stream_id) > 100):
         return bad_request("stream_id must be a short string", 422)
     if not isinstance(attachments, list) or not all(isinstance(a, dict) for a in attachments):
@@ -330,9 +336,12 @@ def chat(user):
             if supa and str(a.get("url", "")).startswith(supa + "/"):
                 content_parts.append({"type": "image_url", "image_url": {"url": a["url"]}})
 
+    # Held as a reference so an auto-search can prepend live results to the
+    # user's turn after streaming has already started (see generate()).
+    user_text_part: dict | None = None
     if model_text:
-        content_parts.append({"type": "text", "text": model_text})
-    user_content = content_parts if content_parts else model_text
+        user_text_part = {"type": "text", "text": model_text}
+        content_parts.append(user_text_part)
 
     MAX_BATCH_PAYLOAD_MB = 15
     PAGES_PER_BATCH = 5
@@ -344,7 +353,6 @@ def chat(user):
     if use_batches:
         pdf_batches = _split_doc_parts_into_batches(doc_parts, pages_per_batch=PAGES_PER_BATCH)
         non_pdf_parts = [p for p in content_parts if p not in doc_parts and p.get("type") != "text"]
-        user_text_part = {"type": "text", "text": model_text} if model_text else None
         for idx, batch in enumerate(pdf_batches):
             batch_content: list[dict] = []
             if idx == 0:
@@ -385,6 +393,14 @@ def chat(user):
 
     is_first_turn = not history
     cancel_event = _register_cancel(stream_id, user.id) if stream_id else threading.Event()
+
+    # Voice turns stay on the fast path, and a client-supplied augmented_message
+    # means the turn already carries its own retrieved context (scraped URLs).
+    search_allowed = (
+        (auto_search or force_search)
+        and not augmented_message
+        and chosen_friendly != "aeon"
+    )
 
     def generate():
         nonlocal convo, user_message
@@ -431,6 +447,47 @@ def chat(user):
 
         yield sse_event({"type": "conversation", "data": {k: v for k, v in convo.items() if not str(k).startswith("_")}})
         yield sse_event({"type": "user_message", "data": user_message})
+
+        if search_allowed:
+            try:
+                needs_search, search_query = search_router.should_search(
+                    message_text,
+                    history=history,
+                    has_attachments=has_any_attachment,
+                    force=force_search,
+                )
+            except Exception as exc:  # noqa: BLE001 — routing must never break the turn
+                logger.warning("chat: search routing failed: %s", exc)
+                needs_search, search_query = False, ""
+
+            if needs_search:
+                yield sse_event({"type": "searching", "query": search_query})
+                t_search = time.time()
+                results = search_router.run_search(search_query)
+                elapsed = time.time() - t_search
+                # Everything the search card renders: the results Bimo actually
+                # read, plus how long the round trip took.
+                yield sse_event({
+                    "type": "search_complete",
+                    "count": len(results),
+                    "elapsed_ms": int(elapsed * 1000),
+                    "results": [
+                        {
+                            "title": r.get("title") or "",
+                            "url": r.get("url") or "",
+                            "snippet": (r.get("content") or "").strip()[:220],
+                            "published_date": r.get("published_date") or "",
+                        }
+                        for r in results if r.get("url")
+                    ],
+                })
+                logger.info(
+                    "chat: auto-search query=%r results=%d in %.2fs",
+                    search_query, len(results), elapsed,
+                )
+                if results and user_text_part is not None:
+                    context = search_router.build_search_context(search_query, results)
+                    user_text_part["text"] = f"{context}\n\n{model_text}"
 
         full_reply = ""
         full_reasoning = ""

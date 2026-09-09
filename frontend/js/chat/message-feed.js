@@ -15,9 +15,10 @@
 
 import { el, clear } from "../utils.js?v=30";
 import { icon } from "../icons.js?v=48";
-import { searchOrb } from "../components/orb.js?v=1";
+import { readingOrb } from "../components/orb.js?v=2";
+import { searchCard } from "../components/search-card.js?v=1";
 import { renderMarkdown, whenMarkdownReady } from "../components/markdown.js?v=31";
-import { messageBubble, reasoningDetails, extractDocumentArtifact, docArtifactSkeletonCard } from "../components/message.js?v=64";
+import { messageBubble, reasoningDetails, extractDocumentArtifact, docArtifactSkeletonCard } from "../components/message.js?v=65";
 import { EXPORT_FORMATS, downloadBlob } from "../export.js?v=2";
 import { StreamingRenderer } from "./stream-renderer.js?v=9";
 import { stripStrayCursors } from "./caret.js?v=1";
@@ -56,13 +57,31 @@ export function imageGeneratingNode() {
   ]);
 }
 
-export function searchingBubbleNode(label = "Searching the web") {
+// Status row for a pasted link being fetched. A web search gets the richer
+// search card instead (searchCardRow below).
+export function readingBubbleNode(label = "Reading webpage…") {
   return el("article", { class: "message assistant searching" }, [
     el("div", { class: "body" }, [
-      el("div", { class: "bubble search-bubble" }, [
-        el("span", { class: "orb-slot" }, [searchOrb(16)]),
+      el("div", { class: "bubble search-bubble reading" }, [
+        el("span", { class: "orb-slot" }, [readingOrb(64)]),
         el("span", { class: "search-label", text: label }),
       ]),
+    ]),
+  ]);
+}
+
+export function searchCardRow(data) {
+  return el("article", { class: "message assistant search-card-row" }, [
+    el("div", { class: "body" }, [searchCard(data)]),
+  ]);
+}
+
+// The spoken line Bimo shows before the search animation ("Let me check the
+// latest on that."). Transient: it belongs to the live turn, not to history.
+export function searchPreambleNode(text) {
+  return el("article", { class: "message assistant search-preamble-row" }, [
+    el("div", { class: "body" }, [
+      el("div", { class: "bubble search-preamble", text }),
     ]),
   ]);
 }
@@ -135,6 +154,9 @@ export class MessageFeed {
     this._emptyNode = null;
     this._emptyGreetingTemplate = null;
     this._searchingNode = null;
+    this._searchCardNode = null;
+    this._searchCardKey = null;
+    this._preambleNode = null;
     this._imageGeneratingNode = null;
     this._streamingNode = null;
 
@@ -171,6 +193,9 @@ export class MessageFeed {
     this._emptyNode = null;
     this._emptyGreetingTemplate = null;
     this._searchingNode = null;
+    this._searchCardNode = null;
+    this._searchCardKey = null;
+    this._preambleNode = null;
     this._imageGeneratingNode = null;
     this._streamingNode = null;
   }
@@ -232,7 +257,10 @@ export class MessageFeed {
     user = null,
     generating = false,
     searching = false,
-    searchingLabel = "Searching the web",
+    searchingLabel = "Reading webpage…",
+    searchVariant = "search",
+    searchCardData = null,
+    searchPreamble = "",
     imageGenerating = false,
     streamingText = "",
     streamingReasoning = "",
@@ -241,10 +269,12 @@ export class MessageFeed {
     statusPhrase = "",
     initial = false,
   }) {
-    if (!messages.length && !generating && !searching && !imageGenerating) {
+    if (!messages.length && !generating && !searching && !imageGenerating && !searchCardData) {
       for (const [, entry] of this._messageNodes) entry.element.remove();
       this._messageNodes.clear();
+      if (this._preambleNode) { this._preambleNode.remove(); this._preambleNode = null; }
       if (this._searchingNode) { this._searchingNode.remove(); this._searchingNode = null; }
+      if (this._searchCardNode) { this._searchCardNode.remove(); this._searchCardNode = null; this._searchCardKey = null; }
       if (this._imageGeneratingNode) { this._imageGeneratingNode.remove(); this._imageGeneratingNode = null; }
       if (this._streamingNode) { this._streamingNode.remove(); this._streamingNode = null; }
       if (!this._emptyNode || !this._emptyNode.isConnected) {
@@ -333,10 +363,44 @@ export class MessageFeed {
       prevNode = entry.element;
     }
 
-    // Trailing nodes (searching / image gen / live stream)
-    if (searching) {
+    // Trailing nodes, in visual order: the spoken preamble, then the live
+    // search animation, then image gen, then the streaming answer. The
+    // preamble survives the search itself so the answer arrives underneath it
+    // rather than replacing it.
+    if (searchPreamble) {
+      if (!this._preambleNode || !this._preambleNode.isConnected) {
+        this._preambleNode = searchPreambleNode(searchPreamble);
+        this.streamInner.append(this._preambleNode);
+      }
+    } else if (this._preambleNode) {
+      this._preambleNode.remove();
+      this._preambleNode = null;
+    }
+
+    // A web search renders the search card, which starts as skeleton rows and
+    // is rebuilt once — when the results land. Keying on the phase means later
+    // renders leave the card alone, so an expanded result list stays expanded.
+    if (searchCardData) {
+      const key = `${searchCardData.searching ? "live" : "done"}:${searchCardData.query}:${(searchCardData.results || []).length}`;
+      if (this._searchCardNode && this._searchCardKey !== key) {
+        this._searchCardNode.remove();
+        this._searchCardNode = null;
+      }
+      if (!this._searchCardNode || !this._searchCardNode.isConnected) {
+        this._searchCardNode = searchCardRow(searchCardData);
+        this._searchCardKey = key;
+        this.streamInner.append(this._searchCardNode);
+      }
+    } else if (this._searchCardNode) {
+      this._searchCardNode.remove();
+      this._searchCardNode = null;
+      this._searchCardKey = null;
+    }
+
+    // Reading a pasted link keeps the simple orb row.
+    if (searching && searchVariant === "reading") {
       if (!this._searchingNode || !this._searchingNode.isConnected) {
-        this._searchingNode = searchingBubbleNode(searchingLabel);
+        this._searchingNode = readingBubbleNode(searchingLabel);
         this.streamInner.append(this._searchingNode);
       } else {
         const labelEl = this._searchingNode.querySelector(".search-label");

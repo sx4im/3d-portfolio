@@ -80,11 +80,14 @@ services:
         sync: false
       - key: GROQ_AEON_MODEL
         value: qwen/qwen3.8-27b
-      # Web Search & Scraping
-      - key: TAVILY_API_KEY
+      # Web Search & Scraping (TinyFish)
+      - key: TINYFISH_API_KEY
         sync: false
-      - key: FIRECRAWL_API_KEY
-        sync: false
+      # Autonomous search routing (Groq first, Mistral fallback, rules if neither)
+      - key: SEARCH_CLASSIFIER_MODEL
+        value: llama-3.1-8b-instant
+      - key: SEARCH_CLASSIFIER_TIMEOUT_S
+        value: "1.5"
       # Mistral AI (Stanza 2.5)
       - key: MISTRAL_API_KEY
         sync: false

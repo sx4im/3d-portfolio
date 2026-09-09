@@ -1,5 +1,6 @@
 import { el, clear } from "../utils.js?v=30";
-import { thoughtOrb } from "./orb.js?v=1";
+import { thoughtOrb } from "./orb.js?v=2";
+import { searchCard } from "./search-card.js?v=1";
 import { icon, formatDocIcon } from "../icons.js?v=30";
 import { avatar } from "./avatar.js?v=30";
 import { renderMarkdown } from "./markdown.js?v=31";
@@ -416,6 +417,9 @@ export function messageBubble({
 
 
   const bodyChildren = [];
+  // The search that produced this answer, kept above it. Set on the live turn
+  // only — replies loaded from history have no search to show.
+  if (isAssistant && message.search) bodyChildren.push(searchCard(message.search));
   if (reasoningNode) bodyChildren.push(reasoningNode);
   if (bubbleNodes.length) bodyChildren.push(...bubbleNodes);
   if (quizNode) bodyChildren.push(quizNode);

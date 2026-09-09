@@ -9,6 +9,7 @@ JWT authentication.
 from __future__ import annotations
 
 import importlib
+import json
 
 import pytest
 
@@ -1185,12 +1186,12 @@ def test_scrape_endpoint(client, monkeypatch):
     assert res.status_code == 422
 
     # 2. Web scraping not configured (no key) -> 503
-    monkeypatch.delenv("FIRECRAWL_API_KEY", raising=False)
+    monkeypatch.delenv("TINYFISH_API_KEY", raising=False)
     res = client.post("/scrape", headers=headers, json={"url": "example.com"})
     assert res.status_code == 503
 
-    # 3. Successful scrape with mock Firecrawl response
-    monkeypatch.setenv("FIRECRAWL_API_KEY", "fc-test-key")
+    # 3. Successful scrape with mock TinyFish response
+    monkeypatch.setenv("TINYFISH_API_KEY", "tf-test-key")
 
     class MockResponse:
         def __init__(self, status_code, json_data):
@@ -1209,14 +1210,17 @@ def test_scrape_endpoint(client, monkeypatch):
         captured_req["url"] = url
         captured_req.update(kwargs)
         return MockResponse(200, {
-            "success": True,
-            "data": {
-                "markdown": "# Example Domain\nThis domain is for use in illustrative examples.",
-                "metadata": {
+            "results": [
+                {
+                    "url": "https://example.com",
+                    "final_url": "https://example.com",
                     "title": "Example Domain",
                     "description": "Example Domain description",
-                },
-            },
+                    "text": "# Example Domain\nThis domain is for use in illustrative examples.",
+                    "format": "markdown",
+                }
+            ],
+            "errors": [],
         })
 
     monkeypatch.setattr(requests, "post", mock_post)
@@ -1228,17 +1232,504 @@ def test_scrape_endpoint(client, monkeypatch):
     assert "Example Domain" in data["markdown"]
     assert data["title"] == "Example Domain"
     assert data["url"] == "https://example.com"
-    assert captured_req["url"] == "https://api.firecrawl.dev/v2/scrape"
-    assert captured_req["headers"]["Authorization"] == "Bearer fc-test-key"
-    assert captured_req["json"]["url"] == "https://example.com"
+    assert captured_req["url"] == "https://api.fetch.tinyfish.ai"
+    assert captured_req["headers"]["X-API-Key"] == "tf-test-key"
+    assert captured_req["json"]["urls"] == ["https://example.com"]
+    assert captured_req["json"]["format"] == "markdown"
 
-    # 4. Firecrawl error -> 502
+    # 4. TinyFish error -> 502
     def mock_post_err(url, **kwargs):
-        raise requests.RequestException("Firecrawl down")
+        raise requests.RequestException("TinyFish down")
 
     monkeypatch.setattr(requests, "post", mock_post_err)
     res = client.post("/scrape", headers=headers, json={"url": "https://example.com"})
     assert res.status_code == 502
+
+
+def test_search_endpoint(client, monkeypatch):
+    import time
+    import jwt
+    import requests
+
+    claims = {
+        "sub": "test_search_user",
+        "email": "search@test.com",
+        "aud": "authenticated",
+        "iss": "https://example.supabase.co/auth/v1",
+        "exp": int(time.time()) + 3600,
+    }
+    token = jwt.encode(claims, "test-jwt-secret", algorithm="HS256")
+    headers = {"Authorization": f"Bearer {token}"}
+
+    # 1. Missing query -> 422
+    res = client.post("/search", headers=headers, json={})
+    assert res.status_code == 422
+
+    # 2. Web search not configured (no key) -> 503
+    monkeypatch.delenv("TINYFISH_API_KEY", raising=False)
+    res = client.post("/search", headers=headers, json={"query": "python"})
+    assert res.status_code == 503
+
+    # 3. Successful search with mock TinyFish response
+    monkeypatch.setenv("TINYFISH_API_KEY", "tf-test-key")
+
+    class MockResponse:
+        def __init__(self, status_code, json_data):
+            self.status_code = status_code
+            self._json = json_data
+
+        def raise_for_status(self):
+            if self.status_code >= 400:
+                raise requests.HTTPError(f"HTTP {self.status_code}")
+
+        def json(self):
+            return self._json
+
+    captured_req = {}
+    def mock_get(url, **kwargs):
+        captured_req["url"] = url
+        captured_req.update(kwargs)
+        return MockResponse(200, {
+            "query": "python news",
+            "results": [
+                {
+                    "position": 1,
+                    "title": "Python 3.14 Released",
+                    "snippet": "Python 3.14 is now available with major improvements.",
+                    "url": "https://python.org/news/3.14",
+                    "date": "2026-09-01",
+                }
+            ],
+        })
+
+    monkeypatch.setattr(requests, "get", mock_get)
+
+    res = client.post("/search", headers=headers, json={"query": "python news"})
+    assert res.status_code == 200
+    data = res.get_json()
+    assert len(data["results"]) == 1
+    assert data["results"][0]["title"] == "Python 3.14 Released"
+    assert data["results"][0]["content"] == "Python 3.14 is now available with major improvements."
+    assert data["results"][0]["url"] == "https://python.org/news/3.14"
+    assert data["results"][0]["published_date"] == "2026-09-01"
+    assert captured_req["url"] == "https://api.search.tinyfish.ai/"
+    assert captured_req["headers"]["X-API-Key"] == "tf-test-key"
+    assert captured_req["params"]["query"] == "python news"
+    assert captured_req["params"]["domain_type"] == "news"
+
+    # 4. TinyFish error -> 502
+    def mock_get_err(url, **kwargs):
+        raise requests.RequestException("TinyFish down")
+
+    monkeypatch.setattr(requests, "get", mock_get_err)
+    res = client.post("/search", headers=headers, json={"query": "python"})
+    assert res.status_code == 502
+
+
+# ---------- Autonomous web search router ----------
+
+@pytest.mark.parametrize(
+    ("prompt", "expected"),
+    [
+        ("Hello Bimo", False),
+        ("hi", False),
+        ("thanks!", False),
+        ("Explain photosynthesis", False),
+        ("What is the derivative of x^2?", False),
+        ("Write a quicksort function", False),
+        ("write a python script that reverses a string", False),
+        ("help me write a cover letter", False),
+        ("who are you", False),
+        ("what model are you", False),
+        ("who was the first president of the United States", False),
+        ("What is the price of Bitcoin today?", True),
+        ("Who won yesterday's Champions League match?", True),
+        ("Latest tech news this week", True),
+        ("what's the weather in Lahore right now", True),
+        ("current NVDA stock price", True),
+        ("who is the CEO of Twitter", True),
+        ("when is the next SpaceX launch", True),
+        ("what is the latest version of React", True),
+    ],
+)
+def test_should_search_rules_decide_without_the_classifier(prompt, expected, monkeypatch):
+    """Tier 1 must settle every obvious prompt on its own.
+
+    The classifier is replaced with a landmine: if any of these prompts reaches
+    it, the test fails. That is both the correctness check and the latency
+    guarantee, since Tier 1 is pure Python and never touches the network.
+    """
+    from app import search_router
+
+    def landmine(*args, **kwargs):
+        raise AssertionError(f"Tier 2 classifier was invoked for {prompt!r}")
+
+    monkeypatch.setattr(search_router, "_classify", landmine)
+
+    needs_search, query = search_router.should_search(prompt)
+    assert needs_search is expected
+    if expected:
+        assert query
+
+
+def test_should_search_skips_when_attachments_are_present(monkeypatch):
+    """A question about an uploaded file is grounded in the file, not the web."""
+    from app import search_router
+
+    monkeypatch.setattr(search_router, "_classify", lambda *a, **k: (True, "x"))
+
+    needs_search, _ = search_router.should_search(
+        "what are the latest figures in this report?", has_attachments=True
+    )
+    assert needs_search is False
+
+
+def test_should_search_defers_ambiguous_prompts_to_the_classifier(monkeypatch):
+    from app import search_router
+
+    seen = {}
+
+    def fake_classify(query, history=None, reformulate_only=False):
+        seen["query"] = query
+        return True, "openai board composition 2026"
+
+    monkeypatch.setattr(search_router, "_classify", fake_classify)
+
+    needs_search, query = search_router.should_search("who sits on the OpenAI board")
+    assert needs_search is True
+    assert query == "openai board composition 2026"
+    assert seen["query"] == "who sits on the OpenAI board"
+
+
+def test_should_search_fails_open_when_the_classifier_is_unavailable(monkeypatch):
+    """No Groq key, no Mistral key, or a timeout must never block the answer."""
+    from app import search_router
+
+    monkeypatch.setattr(search_router, "_classify", lambda *a, **k: None)
+
+    needs_search, _ = search_router.should_search("who sits on the OpenAI board")
+    assert needs_search is False
+
+
+def test_should_search_honours_a_negative_classifier_verdict(monkeypatch):
+    from app import search_router
+
+    monkeypatch.setattr(search_router, "_classify", lambda *a, **k: (False, ""))
+
+    needs_search, _ = search_router.should_search("status of the artemis program")
+    assert needs_search is False
+
+
+def test_force_search_overrides_the_rules_but_still_reformulates(monkeypatch):
+    from app import search_router
+
+    calls = []
+
+    def fake_classify(query, history=None, reformulate_only=False):
+        calls.append(reformulate_only)
+        return True, "bimo ai assistant"
+
+    monkeypatch.setattr(search_router, "_classify", fake_classify)
+
+    needs_search, query = search_router.should_search("Hello Bimo", force=True)
+    assert needs_search is True
+    assert query == "bimo ai assistant"
+    assert calls == [True]
+
+
+def test_force_search_falls_back_to_the_raw_prompt(monkeypatch):
+    from app import search_router
+
+    monkeypatch.setattr(search_router, "_classify", lambda *a, **k: None)
+
+    needs_search, query = search_router.should_search("Hello Bimo", force=True)
+    assert needs_search is True
+    assert query == "Hello Bimo"
+
+
+def test_run_search_normalizes_tinyfish_results(monkeypatch):
+    import requests
+
+    from app import search_router
+
+    monkeypatch.setenv("TINYFISH_API_KEY", "tf-test-key")
+
+    class MockResponse:
+        status_code = 200
+
+        def raise_for_status(self):
+            return None
+
+        def json(self):
+            return {
+                "results": [
+                    {
+                        "title": "Bitcoin price",
+                        "snippet": "BTC trades at 91,204 USD.",
+                        "url": "https://example.com/btc",
+                        "date": "2026-09-09",
+                    }
+                ]
+            }
+
+    captured = {}
+
+    def mock_get(url, **kwargs):
+        captured["url"] = url
+        captured.update(kwargs)
+        return MockResponse()
+
+    monkeypatch.setattr(requests, "get", mock_get)
+
+    results = search_router.run_search("bitcoin price today")
+    assert results == [
+        {
+            "title": "Bitcoin price",
+            "content": "BTC trades at 91,204 USD.",
+            "url": "https://example.com/btc",
+            "published_date": "2026-09-09",
+        }
+    ]
+    assert captured["url"] == "https://api.search.tinyfish.ai/"
+    assert captured["headers"]["X-API-Key"] == "tf-test-key"
+    assert captured["params"]["domain_type"] == "news"
+
+
+def test_run_search_returns_empty_instead_of_raising(monkeypatch):
+    import requests
+
+    from app import search_router
+
+    monkeypatch.setenv("TINYFISH_API_KEY", "tf-test-key")
+
+    def mock_get(url, **kwargs):
+        raise requests.RequestException("TinyFish down")
+
+    monkeypatch.setattr(requests, "get", mock_get)
+    assert search_router.run_search("bitcoin price today") == []
+
+    monkeypatch.delenv("TINYFISH_API_KEY", raising=False)
+    assert search_router.run_search("bitcoin price today") == []
+
+
+def test_build_search_context_wraps_results_in_boundary_tags():
+    from app import search_router
+
+    context = search_router.build_search_context(
+        "bitcoin price today",
+        [
+            {
+                "title": "Bitcoin price",
+                "content": "BTC trades at 91,204 USD.",
+                "url": "https://example.com/btc",
+                "published_date": "2026-09-09",
+            }
+        ],
+    )
+    assert context.startswith("<live_web_search")
+    assert context.endswith("</live_web_search>")
+    assert "https://example.com/btc" in context
+    assert "91,204" in context
+
+
+def _search_chat_token():
+    import time
+
+    import jwt
+
+    claims = {
+        "sub": "test_autosearch_user",
+        "email": "autosearch@test.com",
+        "aud": "authenticated",
+        "iss": "https://example.supabase.co/auth/v1",
+        "exp": int(time.time()) + 3600,
+    }
+    return jwt.encode(claims, "test-jwt-secret", algorithm="HS256")
+
+
+def _stub_chat_persistence(monkeypatch):
+    from app import store
+
+    monkeypatch.setattr(
+        "app.routes.chat_routes.get_usage_status",
+        lambda uid: {"blocked": False, "session": {"used": 0, "limit": 100000}, "weekly": {"used": 0, "limit": 1000000}},
+    )
+    monkeypatch.setattr(store, "recent_usage_events", lambda *a, **k: [])
+    monkeypatch.setattr(store, "get_conversation", lambda cid, uid: {"id": cid, "user_id": uid, "model": "thinking"})
+    monkeypatch.setattr(store, "update_conversation", lambda cid, uid, patch: {"id": cid, "user_id": uid, **patch})
+    monkeypatch.setattr(store, "get_messages", lambda cid, limit=None: [])
+    monkeypatch.setattr(store, "add_message", lambda *a, **k: {"id": "m_search", "role": k.get("role", "assistant")})
+    monkeypatch.setattr(store, "touch_conversation", lambda cid, uid: None)
+    monkeypatch.setattr(store, "record_usage", lambda *a, **k: None)
+
+
+def test_chat_streams_search_events_and_augments_the_prompt(client, monkeypatch):
+    """An auto-searched turn tells the UI it is searching, then answers with context."""
+    from app import search_router
+
+    _stub_chat_persistence(monkeypatch)
+
+    monkeypatch.setattr(search_router, "should_search", lambda *a, **k: (True, "bitcoin price today"))
+    monkeypatch.setattr(
+        search_router,
+        "run_search",
+        lambda query, **k: [
+            {
+                "title": "Bitcoin price",
+                "content": "BTC trades at 91,204 USD.",
+                "url": "https://example.com/btc",
+                "published_date": "2026-09-09",
+            }
+        ],
+    )
+
+    captured = {}
+
+    def mock_stream(messages, **kwargs):
+        captured["messages"] = messages
+        yield {"type": "delta", "data": "Bitcoin is at 91,204 USD."}
+        yield {"type": "done", "content": "Bitcoin is at 91,204 USD."}
+
+    monkeypatch.setattr("app.nvidia_client.iter_response_with_fallback", mock_stream)
+
+    resp = client.post(
+        "/chat",
+        headers={"Authorization": f"Bearer {_search_chat_token()}"},
+        json={"conversation_id": "c_autosearch", "message": "What is the price of Bitcoin today?"},
+    )
+    assert resp.status_code == 200
+    body = resp.get_data(as_text=True)
+
+    assert '"type": "searching"' in body
+    assert "bitcoin price today" in body
+    assert '"type": "search_complete"' in body
+
+    # The search card in the UI is driven straight off this payload.
+    search_done = next(
+        json.loads(line[5:])
+        for line in body.splitlines()
+        if line.startswith("data:") and '"search_complete"' in line
+    )
+    assert search_done["count"] == 1
+    assert search_done["elapsed_ms"] >= 0
+    assert search_done["results"] == [
+        {
+            "title": "Bitcoin price",
+            "url": "https://example.com/btc",
+            "snippet": "BTC trades at 91,204 USD.",
+            "published_date": "2026-09-09",
+        }
+    ]
+
+    last_user = [m for m in captured["messages"] if m["role"] == "user"][-1]
+    content = last_user["content"]
+    if isinstance(content, list):
+        content = "".join(p.get("text", "") for p in content if p.get("type") == "text")
+    assert "<live_web_search" in content
+    assert "https://example.com/btc" in content
+    assert "What is the price of Bitcoin today?" in content
+
+
+def test_chat_skips_search_when_the_router_declines(client, monkeypatch):
+    from app import search_router
+
+    _stub_chat_persistence(monkeypatch)
+
+    monkeypatch.setattr(search_router, "should_search", lambda *a, **k: (False, ""))
+
+    def landmine(*a, **k):
+        raise AssertionError("run_search must not be called when the router declines")
+
+    monkeypatch.setattr(search_router, "run_search", landmine)
+
+    captured = {}
+
+    def mock_stream(messages, **kwargs):
+        captured["messages"] = messages
+        yield {"type": "delta", "data": "Photosynthesis converts light into sugar."}
+        yield {"type": "done", "content": "Photosynthesis converts light into sugar."}
+
+    monkeypatch.setattr("app.nvidia_client.iter_response_with_fallback", mock_stream)
+
+    resp = client.post(
+        "/chat",
+        headers={"Authorization": f"Bearer {_search_chat_token()}"},
+        json={"conversation_id": "c_nosearch", "message": "Explain photosynthesis"},
+    )
+    assert resp.status_code == 200
+    body = resp.get_data(as_text=True)
+    assert '"type": "searching"' not in body
+
+    last_user = [m for m in captured["messages"] if m["role"] == "user"][-1]
+    content = last_user["content"]
+    if isinstance(content, list):
+        content = "".join(p.get("text", "") for p in content if p.get("type") == "text")
+    assert "<live_web_search" not in content
+
+
+def test_chat_auto_search_can_be_disabled_by_the_client(client, monkeypatch):
+    from app import search_router
+
+    _stub_chat_persistence(monkeypatch)
+
+    def landmine(*a, **k):
+        raise AssertionError("should_search must not run when auto_search is off")
+
+    monkeypatch.setattr(search_router, "should_search", landmine)
+
+    def mock_stream(messages, **kwargs):
+        yield {"type": "delta", "data": "ok"}
+        yield {"type": "done", "content": "ok"}
+
+    monkeypatch.setattr("app.nvidia_client.iter_response_with_fallback", mock_stream)
+
+    resp = client.post(
+        "/chat",
+        headers={"Authorization": f"Bearer {_search_chat_token()}"},
+        json={
+            "conversation_id": "c_autosearch_off",
+            "message": "What is the price of Bitcoin today?",
+            "auto_search": False,
+        },
+    )
+    assert resp.status_code == 200
+    assert '"type": "searching"' not in resp.get_data(as_text=True)
+
+
+def test_chat_survives_a_search_that_returns_nothing(client, monkeypatch):
+    """A failed or empty search still closes the bubble and answers the question."""
+    from app import search_router
+
+    _stub_chat_persistence(monkeypatch)
+
+    monkeypatch.setattr(search_router, "should_search", lambda *a, **k: (True, "bitcoin price today"))
+    monkeypatch.setattr(search_router, "run_search", lambda query, **k: [])
+
+    captured = {}
+
+    def mock_stream(messages, **kwargs):
+        captured["messages"] = messages
+        yield {"type": "delta", "data": "I could not reach live pricing."}
+        yield {"type": "done", "content": "I could not reach live pricing."}
+
+    monkeypatch.setattr("app.nvidia_client.iter_response_with_fallback", mock_stream)
+
+    resp = client.post(
+        "/chat",
+        headers={"Authorization": f"Bearer {_search_chat_token()}"},
+        json={"conversation_id": "c_emptysearch", "message": "What is the price of Bitcoin today?"},
+    )
+    assert resp.status_code == 200
+    body = resp.get_data(as_text=True)
+    assert '"type": "searching"' in body
+    assert '"type": "search_complete"' in body
+    assert '"count": 0' in body
+
+    last_user = [m for m in captured["messages"] if m["role"] == "user"][-1]
+    content = last_user["content"]
+    if isinstance(content, list):
+        content = "".join(p.get("text", "") for p in content if p.get("type") == "text")
+    assert "<live_web_search" not in content
 
 
 

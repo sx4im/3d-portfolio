@@ -3,7 +3,7 @@
  * Manages token assembly, reasoning timer, background buffering, status phrases, and stream cancellation.
  */
 
-import * as api from "../api.js?v=56";
+import * as api from "../api.js?v=60";
 
 export const ROTATING_PHRASES = [
   "Extrapolating…",
@@ -38,6 +38,26 @@ export const ROTATING_PHRASES = [
   "Extemporizing…",
 ];
 
+// Shown for the moment between "Bimo decided to search" and the results
+// landing. Transient chrome, never persisted into the reply.
+export const SEARCH_PREAMBLES = [
+  "Let me check the latest on that.",
+  "One moment, checking current sources.",
+  "Let me look that up for you.",
+  "Checking the most recent information.",
+  "Give me a second, pulling this up live.",
+];
+
+let _lastPreambleIndex = -1;
+export function getSearchPreamble() {
+  let i = 0;
+  do {
+    i = Math.floor(Math.random() * SEARCH_PREAMBLES.length);
+  } while (i === _lastPreambleIndex && SEARCH_PREAMBLES.length > 1);
+  _lastPreambleIndex = i;
+  return SEARCH_PREAMBLES[i];
+}
+
 let _lastPhraseIndex = -1;
 export function getRandomPhrase() {
   let i = 0;
@@ -66,6 +86,8 @@ export class StreamHandler {
     onAssistantMessage,
     onError,
     onStatusChange,
+    onSearching,
+    onSearchComplete,
   }) {
     this.getAuthToken = getAuthToken;
     this.onConversation = onConversation || (() => {});
@@ -76,6 +98,8 @@ export class StreamHandler {
     this.onAssistantMessage = onAssistantMessage || (() => {});
     this.onError = onError || (() => {});
     this.onStatusChange = onStatusChange || (() => {});
+    this.onSearching = onSearching || (() => {});
+    this.onSearchComplete = onSearchComplete || (() => {});
 
     this.controller = null;
     this.currentStreamId = null;
@@ -87,10 +111,19 @@ export class StreamHandler {
     this.streamingReasoning = "";
     this.hiddenBuffer = [];
     this.currentPhrase = "";
+    this.isSearching = false;
   }
 
   get isStreaming() {
     return Boolean(this.controller && !this.controller.signal.aborted);
+  }
+
+  // Idempotent so the search card is settled exactly once, whether the server
+  // closes it explicitly or the first token simply arrives.
+  endSearch({ count = 0, elapsedMs = null, results = [] } = {}) {
+    if (!this.isSearching) return;
+    this.isSearching = false;
+    this.onSearchComplete({ count, elapsedMs, results });
   }
 
   startReasoningTimer(onTick) {
@@ -144,6 +177,7 @@ export class StreamHandler {
   cleanup() {
     this.stopStatusRotation();
     this.stopReasoningTimer();
+    this.endSearch();
     this.controller = null;
     this.currentStreamId = null;
     this.hiddenBuffer = [];
@@ -178,7 +212,13 @@ export class StreamHandler {
           signal: this.controller.signal,
           onConversation: (convo) => this.onConversation(convo),
           onUserMessage: (msg) => this.onUserMessage(msg),
+          onSearching: ({ query }) => {
+            this.isSearching = true;
+            this.onSearching({ query, preamble: getSearchPreamble() });
+          },
+          onSearchComplete: (done) => this.endSearch(done),
           onReasoningToken: ({ delta }) => {
+            this.endSearch();
             this.streamingReasoning += delta;
             this.startReasoningTimer((elapsed) => {
               this.onStatusChange({ reasoningElapsed: elapsed });
@@ -193,6 +233,7 @@ export class StreamHandler {
             });
           },
           onToken: ({ delta }) => {
+            this.endSearch();
             this.streamingText += delta;
             if (onDeltaVoice) {
               try { onDeltaVoice(this.streamingText); } catch {}
