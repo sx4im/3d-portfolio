@@ -104,6 +104,19 @@ _DEFINITIONAL = re.compile(
     re.IGNORECASE,
 )
 
+# "Hey Bimo," / "Bimo," is how people talk to the assistant. TinyFish's news
+# index treats that as part of the query and often returns nothing.
+_ADDRESS = re.compile(
+    r"^\s*(?:(?:hey|hi|hello|yo|ok|okay|so)\s+)?bimo\b[\s,.:;!\-]*",
+    re.IGNORECASE,
+)
+
+
+def _for_search(text: str) -> str:
+    """Drop a leading address so retrieval sees the question, not the greeting."""
+    stripped = _ADDRESS.sub("", text or "", count=1).strip()
+    return stripped or (text or "").strip()
+
 
 def is_live_query(query: str) -> bool:
     """True when a query is time-sensitive enough to prefer fresh news sources."""
@@ -275,40 +288,49 @@ def should_search(
         if not text:
             return False, ""
         verdict = _classify(text, history=history, reformulate_only=True)
-        return True, (verdict[1] if verdict else text)
+        return True, _for_search(verdict[1] if verdict else text)
 
     if has_attachments:
         return False, ""
 
     instant = _tier1(text)
     if instant is not None:
-        return (True, text) if instant else (False, "")
+        return (True, _for_search(text)) if instant else (False, "")
 
     verdict = _classify(text, history=history)
     if verdict is None:
         return False, ""
+    if verdict[0]:
+        return True, _for_search(verdict[1] or text)
     return verdict
 
 
 def fetch_results(query: str, *, timeout: float = 8.0) -> list[dict]:
     """Query TinyFish and normalize the payload. Raises on transport failure."""
-    q = (query or "").strip()
+    q = _for_search((query or "").strip())
     api_key = os.environ.get("TINYFISH_API_KEY")
     if not q or not api_key:
         return []
 
-    params = {"query": q}
-    if is_live_query(q):
-        params["domain_type"] = "news"
+    headers = {"X-API-Key": api_key}
 
-    resp = requests.get(
-        TINYFISH_SEARCH_URL,
-        params=params,
-        headers={"X-API-Key": api_key},
-        timeout=timeout,
-    )
-    resp.raise_for_status()
-    data = resp.json()
+    def _get(params: dict) -> list:
+        resp = requests.get(
+            TINYFISH_SEARCH_URL,
+            params=params,
+            headers=headers,
+            timeout=timeout,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        return data.get("results") or []
+
+    # Live questions prefer the news index. A chatty prompt ("Hey Bimo, what's
+    # the score today?") often returns nothing there while the same words as a
+    # normal web search still hit, so fall back rather than showing an empty card.
+    rows = _get({"query": q, "domain_type": "news"}) if is_live_query(q) else None
+    if not rows:
+        rows = _get({"query": q})
 
     return [
         {
@@ -317,7 +339,7 @@ def fetch_results(query: str, *, timeout: float = 8.0) -> list[dict]:
             "url": r.get("url", ""),
             "published_date": r.get("date") or r.get("published_date", ""),
         }
-        for r in (data.get("results") or [])[:MAX_RESULTS]
+        for r in rows[:MAX_RESULTS]
     ]
 
 

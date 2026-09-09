@@ -1372,6 +1372,25 @@ def test_should_search_rules_decide_without_the_classifier(prompt, expected, mon
         assert query
 
 
+def test_should_search_drops_hey_bimo_from_the_retrieval_query(monkeypatch):
+    from app import search_router
+
+    monkeypatch.setattr(search_router, "_classify", lambda *a, **k: (_ for _ in ()).throw(
+        AssertionError("classifier should not run")
+    ))
+
+    needs, query = search_router.should_search(
+        "Hey Bimo, what are the key takeaways from today's UCL matches?"
+    )
+    assert needs is True
+    assert query == "what are the key takeaways from today's UCL matches?"
+    assert "bimo" not in query.lower()
+
+    needs, query = search_router.should_search("Bimo, bitcoin price today")
+    assert needs is True
+    assert query == "bitcoin price today"
+
+
 def test_should_search_skips_when_attachments_are_present(monkeypatch):
     """A question about an uploaded file is grounded in the file, not the web."""
     from app import search_router
@@ -1493,6 +1512,45 @@ def test_run_search_normalizes_tinyfish_results(monkeypatch):
     assert captured["url"] == "https://api.search.tinyfish.ai/"
     assert captured["headers"]["X-API-Key"] == "tf-test-key"
     assert captured["params"]["domain_type"] == "news"
+
+
+def test_run_search_falls_back_to_web_when_news_is_empty(monkeypatch):
+    import requests
+
+    from app import search_router
+
+    monkeypatch.setenv("TINYFISH_API_KEY", "tf-test-key")
+    calls = []
+
+    class MockResponse:
+        def __init__(self, results):
+            self.status_code = 200
+            self._results = results
+
+        def raise_for_status(self):
+            return None
+
+        def json(self):
+            return {"results": self._results}
+
+    def mock_get(url, **kwargs):
+        params = kwargs.get("params") or {}
+        calls.append(params)
+        if params.get("domain_type") == "news":
+            return MockResponse([])
+        return MockResponse([{
+            "title": "UCL takeaways",
+            "snippet": "City drew 1-1.",
+            "url": "https://example.com/ucl",
+            "date": "2026-09-10",
+        }])
+
+    monkeypatch.setattr(requests, "get", mock_get)
+
+    results = search_router.run_search("Hey Bimo, today's UCL matches?")
+    assert [c.get("domain_type") for c in calls] == ["news", None]
+    assert results[0]["title"] == "UCL takeaways"
+    assert results[0]["url"] == "https://example.com/ucl"
 
 
 def test_run_search_returns_empty_instead_of_raising(monkeypatch):
