@@ -10,7 +10,7 @@ import os
 
 # Default foundation models
 DEFAULT_STANZA_MODEL = "ministral-8b-2512"
-DEFAULT_NEXOS_MODEL = "openai/gpt-oss-120b"
+DEFAULT_NEXOS_MODEL = "openai/gpt-oss-20b"
 DEFAULT_VISION_MODEL = "google/diffusiongemma-26b-a4b-it"
 DEFAULT_AEON_MODEL = "qwen/qwen3.8-27b"
 DEFAULT_IMAGE_MODEL = "black-forest-labs/flux.2-klein-4b"

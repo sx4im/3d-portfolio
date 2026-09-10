@@ -32,7 +32,7 @@ services:
       - key: NVIDIA_STANZA_MODEL
         value: qwen/qwen3-next-80b-a3b-instruct
       - key: NVIDIA_NEXOS_MODEL
-        value: openai/gpt-oss-120b
+        value: openai/gpt-oss-20b
       - key: NVIDIA_VISION_MODEL
         value: google/diffusiongemma-26b-a4b-it
       # Per-reply output cap. Higher = longer answers / full code builds

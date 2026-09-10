@@ -39,7 +39,7 @@ def friendly_error(exc: Exception) -> str:
         return (
             "The Nexos model is temporarily unavailable on NVIDIA's servers "
             "(DEGRADED). In Render → Environment, set NVIDIA_NEXOS_MODEL to "
-            "openai/gpt-oss-120b, or try again later."
+            "openai/gpt-oss-20b, or try again later."
         )
     return msg
 

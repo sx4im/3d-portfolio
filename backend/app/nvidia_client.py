@@ -521,55 +521,13 @@ def _strip_leaked_highlight_spans(text: str) -> str:
     return html.unescape(text)
 
 
-_REASONING_CHANNEL_MARKERS = ("<|channel|>thought", "<|channel|>analysis")
-_CHANNEL_NAME_PREFIX = re.compile(r"^(?:final|commentary|response)(?:<\|message\|>)?")
-
-
 def _clean_llm_text(text: str) -> str:
     if not text:
         return ""
-    # Strip Harmony / channel tokens e.g. <|channel|>thought, <|message|>, <|channel|>
-    text = re.sub(
-        r"<\|(?:start|end|message|channel)\|>[a-zA-Z0-9_]*|"
-        r"<\|(?:start|end|message|channel)\|>|"
-        r"<channel\|>[a-zA-Z0-9_]*|<channel\|>",
-        "",
-        text,
-    )
+    # Strip channel tokens e.g. <|channel|>thought, <|channel|>, <channel|>
+    text = re.sub(r"<\|channel\|>[a-zA-Z0-9_]*|<\|channel\|>|<channel\|>[a-zA-Z0-9_]*|<channel\|>", "", text)
     text = _strip_leaked_highlight_spans(text)
     return text
-
-
-def _split_reasoning_channel(delta: str) -> Optional[tuple[str, str]]:
-    """Split GPT-OSS / Harmony analysis|thought channel openers from answer text."""
-    for marker in _REASONING_CHANNEL_MARKERS:
-        if marker in delta:
-            before, after = delta.split(marker, 1)
-            return before, after
-    return None
-
-
-def _nexos_first_token_timeout(model: str) -> Optional[float]:
-    """Seconds to wait for the first Nexos token before falling back to Stanza.
-
-    GPT-OSS can spend a long time in the analysis channel before any byte
-    arrives. The old 50s cap treated that as a hang and swapped onto Stanza
-    (Mistral), which never emits reasoning_delta — so the thought UI vanished.
-    """
-    current_lower = model.lower()
-    if current_lower == get_stanza_model().lower():
-        return None
-    if "gpt-oss" in current_lower:
-        return None
-    nexos_id = get_nexos_model().lower()
-    if (
-        current_lower == nexos_id
-        or "inkling" in current_lower
-        or "deepseek" in current_lower
-        or "mistral-medium" in current_lower
-    ):
-        return 50.0
-    return None
 
 
 def build_messages_for_vision(
@@ -871,16 +829,15 @@ def iter_response(
             if delta:
                 delta = _strip_leaked_highlight_spans(delta)
 
-                split_channel = _split_reasoning_channel(delta)
-                if split_channel:
-                    before, after = split_channel
-                    if before:
-                        p0 = _clean_llm_text(before)
+                if "<|channel|>thought" in delta:
+                    parts = delta.split("<|channel|>thought", 1)
+                    if parts[0]:
+                        p0 = _clean_llm_text(parts[0])
                         if p0:
                             full.append(p0)
                             yield {"type": "delta", "data": p0}
                     in_channel_thought = True
-                    delta = after
+                    delta = parts[1]
 
                 if in_channel_thought and delta:
                     if "<|channel|>" in delta:
@@ -892,7 +849,7 @@ def iter_response(
                                 if show_thought_ui:
                                     yield {"type": "reasoning_delta", "data": tp}
                         in_channel_thought = False
-                        delta = _CHANNEL_NAME_PREFIX.sub("", content_part)
+                        delta = content_part
                     else:
                         tp = _clean_llm_text(delta)
                         if tp:
@@ -972,11 +929,21 @@ def iter_response_with_fallback(
 ) -> Iterator[dict]:
     """Wraps `iter_response` with automatic fallback to Stanza 2.5 if primary times out."""
     chosen_model = model or default_model()
+    
+    stanza_id = get_stanza_model().lower()
+    nexos_id = get_nexos_model().lower()
+    
     current_lower = chosen_model.lower()
-    first_token_timeout = _nexos_first_token_timeout(chosen_model)
+    
+    # Auto-switch timeout for first token: Nexos 50s
+    if current_lower == nexos_id or "inkling" in current_lower or "deepseek" in current_lower or "mistral-medium" in current_lower:
+        first_token_timeout = 50.0
+    else:
+        first_token_timeout = None
+
     stanza_model = get_stanza_model()
 
-    if not first_token_timeout or current_lower == stanza_model.lower():
+    if not first_token_timeout or current_lower == stanza_id:
         yield from iter_response(
             messages,
             model=chosen_model,

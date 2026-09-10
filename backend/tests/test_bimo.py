@@ -234,7 +234,7 @@ def test_real_model_ids_use_defaults():
     )
     from app import nvidia_client
 
-    assert DEFAULT_NEXOS_MODEL == "openai/gpt-oss-120b"
+    assert DEFAULT_NEXOS_MODEL == "openai/gpt-oss-20b"
     assert REAL_ID_MAP["thinking"] == DEFAULT_STANZA_MODEL
     assert REAL_ID_MAP["deep"]     == DEFAULT_NEXOS_MODEL
     assert VISION_MODEL            == DEFAULT_VISION_MODEL
@@ -505,55 +505,10 @@ def test_iter_response_thinking_toggle_for_deepseek(monkeypatch):
 
     # GPT-OSS supports reasoning_effort
     list(nvidia_client.iter_response([{"role": "user", "content": "hard problem"}],
-                                     model="openai/gpt-oss-120b", thinking=True,
+                                     model="openai/gpt-oss-20b", thinking=True,
                                      reasoning_effort="medium"))
     assert captured["extra_body"]["chat_template_kwargs"]["thinking"] is True
     assert captured["extra_body"]["chat_template_kwargs"]["reasoning_effort"] == "medium"
-
-
-def test_gpt_oss_nexos_does_not_fallback_to_stanza():
-    """Nexos (GPT-OSS) must not first-token-timeout into Stanza/Mistral."""
-    from app.nvidia_client import _nexos_first_token_timeout
-
-    assert _nexos_first_token_timeout("openai/gpt-oss-120b") is None
-    assert _nexos_first_token_timeout("deepseek-ai/deepseek-v4-flash") == 50.0
-
-
-def test_gpt_oss_analysis_channel_emits_reasoning_delta(monkeypatch):
-    """Harmony <|channel|>analysis must surface as thought process, not answer text."""
-    from app import nvidia_client
-    import types
-
-    class _FakeClient:
-        class chat:  # noqa: N801
-            class completions:  # noqa: N801
-                @staticmethod
-                def create(**kwargs):
-                    return [
-                        types.SimpleNamespace(
-                            choices=[types.SimpleNamespace(
-                                delta=types.SimpleNamespace(content="<|channel|>analysis\nNeed to reason"),
-                                finish_reason=None,
-                            )]
-                        ),
-                        types.SimpleNamespace(
-                            choices=[types.SimpleNamespace(
-                                delta=types.SimpleNamespace(content="<|channel|>final\nThe answer"),
-                                finish_reason="stop",
-                            )]
-                        ),
-                    ]
-
-    monkeypatch.setattr(nvidia_client, "_client", lambda *a, **k: _FakeClient())
-    events = list(nvidia_client.iter_response(
-        [{"role": "user", "content": "hi"}],
-        model="openai/gpt-oss-120b",
-    ))
-    reasoning = [e["data"] for e in events if e["type"] == "reasoning_delta"]
-    answer = [e["data"] for e in events if e["type"] == "delta"]
-    assert any("Need to reason" in r for r in reasoning)
-    assert any("The answer" in a for a in answer)
-    assert not any("Need to reason" in a for a in answer)
 
 
 def test_qwen_stanza_gets_full_token_budget(monkeypatch):
