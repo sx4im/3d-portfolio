@@ -41,35 +41,23 @@ export function extractDocumentArtifact(rawContent) {
     };
   }
 
-  // 2. Standard markdown H1 title on line 1 (# Title)
-  const h1Match = trimmed.match(/^#\s+([^\n]+)/);
-
-  // 3. Fallback: only if explicit document fence is used
-  const isStructuredDoc = Boolean(fenceMatch || h1Match);
-
-  if (!isStructuredDoc) {
+  // 2. Markdown H1 title at the start, or after introductory text.
+  const h1Match = trimmed.match(/(?:^|\n)(#\s+([^\n]+))/);
+  if (!h1Match) {
     return { isDoc: false, text: cleaned };
   }
 
-  if (h1Match) {
-    const h1Index = trimmed.indexOf(h1Match[0]);
-    const introText = h1Index > 0 ? stripExportDisclaimers(trimmed.substring(0, h1Index)) : "";
-    const docContent = trimmed.substring(h1Index).trim();
-    const title = h1Match[1].replace(/[*_`#]/g, "").trim();
-
-    return {
-      isDoc: true,
-      introText,
-      docTitle: title || "Bimo AI Document",
-      docContent,
-    };
-  }
+  const heading = h1Match[1];
+  const h1Index = trimmed.indexOf(heading);
+  const introText = h1Index > 0 ? stripExportDisclaimers(trimmed.substring(0, h1Index)) : "";
+  const docContent = trimmed.substring(h1Index).trim();
+  const title = h1Match[2].replace(/[*_`#]/g, "").trim();
 
   return {
     isDoc: true,
-    introText: "",
-    docTitle: "Bimo AI Document",
-    docContent: trimmed,
+    introText,
+    docTitle: title || "Bimo AI Document",
+    docContent,
   };
 }
 

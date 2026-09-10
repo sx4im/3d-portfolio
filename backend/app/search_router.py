@@ -105,9 +105,11 @@ _DEFINITIONAL = re.compile(
 )
 
 # "Hey Bimo," / "Bimo," is how people talk to the assistant. TinyFish's news
-# index treats that as part of the query and often returns nothing.
+# index treats that as part of the query and often returns nothing. Only a
+# vocative address is stripped, not a query that happens to start with "bimo".
 _ADDRESS = re.compile(
-    r"^\s*(?:(?:hey|hi|hello|yo|ok|okay|so)\s+)?bimo\b[\s,.:;!\-]*",
+    r"^\s*(?:(?:hey|hi|hello|yo|ok|okay|so)\s+bimo|bimo)\s*[,:!\-]+\s*"
+    r"|^\s*(?:hey|hi|hello|yo|ok|okay|so)\s+bimo\b[\s,.:;!\-]*",
     re.IGNORECASE,
 )
 

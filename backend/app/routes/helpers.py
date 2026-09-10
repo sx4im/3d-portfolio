@@ -38,8 +38,8 @@ def friendly_error(exc: Exception) -> str:
     if "degraded function cannot be invoked" in lower:
         return (
             "The Nexos model is temporarily unavailable on NVIDIA's servers "
-            "(DEGRADED). In Render → Environment, change NVIDIA_NEXOS_MODEL to a "
-            "working model such as deepseek-ai/deepseek-v4-flash, or try again later."
+            "(DEGRADED). In Render → Environment, set NVIDIA_NEXOS_MODEL to "
+            "openai/gpt-oss-120b, or try again later."
         )
     return msg
 
