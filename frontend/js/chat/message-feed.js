@@ -40,7 +40,6 @@ export function emptyStreamView({ incognito, user, template } = {}) {
 export function imageGeneratingNode() {
   const label = "Creating your image";
   return el("article", { class: "message assistant searching" }, [
-    el("div", { class: "avatar bot", html: icon("spike", { width: 20, height: 20 }) }),
     el("div", { class: "body" }, [
       el("div", { class: "meta" }, [
         el("span", { class: "author", text: "Bimo" }),
