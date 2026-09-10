@@ -1427,6 +1427,21 @@ def test_should_search_skips_when_attachments_are_present(monkeypatch):
     assert needs_search is False
 
 
+def test_search_classifier_defaults_to_aeon_qwen(monkeypatch):
+    """The Groq search classifier must use Aeon (Qwen 3.8), not retired Llama ids."""
+    from app import groq_client, search_router
+    from app.config import get_aeon_model
+
+    monkeypatch.delenv("SEARCH_CLASSIFIER_MODEL", raising=False)
+    monkeypatch.setattr(groq_client, "is_configured", lambda: True)
+    monkeypatch.setattr(search_router.mistral_client, "is_configured", lambda: False)
+
+    backends = search_router._classifier_backends()
+    assert backends[0][0] == "groq"
+    assert backends[0][2] == get_aeon_model()
+    assert "llama-3.1-8b-instant" not in backends[0][2]
+
+
 def test_should_search_defers_ambiguous_prompts_to_the_classifier(monkeypatch):
     from app import search_router
 

@@ -27,14 +27,13 @@ from datetime import datetime, timezone
 import requests
 
 from . import groq_client, mistral_client
-from .config import get_mistral_model
+from .config import get_aeon_model, get_mistral_model
 from .prompts import wrap_search_results
 from .routes.helpers import is_trivial_prompt
 
 logger = logging.getLogger("bimo.search_router")
 
 TINYFISH_SEARCH_URL = "https://api.search.tinyfish.ai/"
-DEFAULT_CLASSIFIER_GROQ_MODEL = "llama-3.1-8b-instant"
 MAX_RESULTS = 8
 
 
@@ -167,7 +166,7 @@ def _classifier_backends() -> list[tuple[str, object, str]]:
         backends.append((
             "groq",
             groq_client._client,
-            os.getenv("SEARCH_CLASSIFIER_MODEL", DEFAULT_CLASSIFIER_GROQ_MODEL).strip(),
+            os.getenv("SEARCH_CLASSIFIER_MODEL", "").strip() or get_aeon_model(),
         ))
     if mistral_client.is_configured():
         backends.append(("mistral", mistral_client._client, get_mistral_model()))
