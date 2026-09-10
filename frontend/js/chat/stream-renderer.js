@@ -27,8 +27,8 @@
  * chase the bottom while it paints. `feed` is injected by the caller.
  */
 
-import { renderMarkdown } from "../components/markdown.js?v=31";
-import { extractDocumentArtifact, docArtifactSkeletonCard } from "../components/message.js?v=68";
+import { renderMarkdown } from "../components/markdown.js?v=32";
+import { extractDocumentArtifact, docArtifactSkeletonCard } from "../components/message.js?v=69";
 import { splitStreamBlocks } from "./stream-splitter.js?v=1";
 import { stripStrayCursors } from "./caret.js?v=1";
 import { el, clear } from "../utils.js?v=30";

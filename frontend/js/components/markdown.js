@@ -361,11 +361,33 @@ function plainFallback(content) {
   return `<div style="white-space:pre-wrap">${escapeHtml(String(content))}</div>`;
 }
 
+function unwrapBracketedUrls(text) {
+  // Models often cite as [https://example.com/path], which GFM treats as a
+  // link whose href swallows the closing bracket and 404s.
+  return String(text).replace(/\[(https?:\/\/[^\s\]]+)\](?!\()/gi, "$1");
+}
+
+function trimTrailingHrefJunk(html) {
+  return String(html).replace(
+    /<a\b([^>]*?)\bhref="([^"]+)"([^>]*)>([\s\S]*?)<\/a>/gi,
+    (_m, pre, href, post, inner) => {
+      const cleanHref = href.replace(/[\]\),.;:]+$/g, "");
+      let cleanInner = inner;
+      if (inner === href || inner.replace(/[\]\),.;:]+$/g, "") === cleanHref) {
+        cleanInner = cleanHref;
+      } else if (inner.endsWith("]")) {
+        cleanInner = inner.replace(/\]+$/g, "");
+      }
+      return `<a${pre}href="${cleanHref}"${post}>${cleanInner}</a>`;
+    },
+  );
+}
+
 export function renderMarkdown(content) {
   if (!content) return "";
   // Scrub leaked highlight.js markup BEFORE markdown parsing — heals both
   // live streams and legacy rows already stored with the pollution.
-  content = stripLeakedHighlightSpans(String(content));
+  content = unwrapBracketedUrls(stripLeakedHighlightSpans(String(content)));
   if (!content) return "";
   if (!lib) {
     ensureMarkdown(); // kick/keep the background load going
@@ -373,7 +395,7 @@ export function renderMarkdown(content) {
   }
   try {
     const { text, blocks, inlines } = extractMath(String(content));
-    let html = lib.DOMPurify.sanitize(lib.marked.parse(text));
+    let html = trimTrailingHrefJunk(lib.DOMPurify.sanitize(lib.marked.parse(text)));
     // Wrap each <table> in a horizontally-scrollable container.
     html = html.replace(/<table([^>]*)>/g, '<div class="md-table-wrap"><table$1>');
     html = html.replace(/<\/table>/g, "</table></div>");

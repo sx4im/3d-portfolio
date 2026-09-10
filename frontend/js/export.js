@@ -5,7 +5,7 @@
  * detection in chat prompts, filename sanitization, and browser Blob downloads.
  */
 
-import { stripLeakedHighlightSpans } from "./components/markdown.js?v=31";
+import { stripLeakedHighlightSpans } from "./components/markdown.js?v=32";
 
 export const EXPORT_FORMATS = {
   md: {

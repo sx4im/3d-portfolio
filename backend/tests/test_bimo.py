@@ -427,7 +427,8 @@ def test_system_prompt_allows_document_generation_and_web_access():
     assert "generate a report" in DEFAULT_SYSTEM_PROMPT
     assert "rate my resume" in DEFAULT_SYSTEM_PROMPT
     assert "full live web search and webpage fetching" in DEFAULT_SYSTEM_PROMPT
-    assert "Never claim you cannot browse the web" in DEFAULT_SYSTEM_PROMPT
+    assert "Never tell the user to search" in DEFAULT_SYSTEM_PROMPT
+    assert "Never wrap a bare URL in square brackets" in DEFAULT_SYSTEM_PROMPT
     assert "could not be reached" in DEFAULT_SYSTEM_PROMPT
     assert "ONLY produce a formal standalone document when the user EXPLICITLY commands" not in DEFAULT_SYSTEM_PROMPT
     assert "If in doubt, default to a normal conversational chat response" not in DEFAULT_SYSTEM_PROMPT
@@ -1440,6 +1441,32 @@ def test_search_classifier_defaults_to_aeon_qwen(monkeypatch):
     assert backends[0][0] == "groq"
     assert backends[0][2] == get_aeon_model()
     assert "llama-3.1-8b-instant" not in backends[0][2]
+
+
+def test_which_is_best_and_benchmarks_always_search(monkeypatch):
+    """Follow-ups like 'which is best' must search without the user saying search."""
+    from app import search_router
+
+    monkeypatch.setattr(
+        search_router,
+        "_classify",
+        lambda query, history=None, reformulate_only=False: (
+            True,
+            "ministral 3 8b vs codestral 2508 benchmarks",
+        ),
+    )
+    history = [
+        {"role": "assistant", "content": "The two models are Ministral 3 8B and Codestral 2508."},
+    ]
+    for prompt in (
+        "which model is best model",
+        "which is better",
+        "compare both models",
+        "search for both benchmarks and tell me which is best",
+    ):
+        needs, query = search_router.should_search(prompt, history=history)
+        assert needs is True, prompt
+        assert query
 
 
 def test_should_search_defers_ambiguous_prompts_to_the_classifier(monkeypatch):
