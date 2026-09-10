@@ -9,13 +9,13 @@ import { getAuth } from "../auth.js?v=31";
 import { navigate } from "../router.js?v=31";
 import { mountAppShell } from "../app-shell.js?v=69";
 import { toast } from "../components/toast.js?v=58";
-import { whenMarkdownReady } from "../components/markdown.js?v=32";
+import { whenMarkdownReady } from "../components/markdown.js?v=33";
 import { openVoiceOverlay } from "../components/voice-overlay.js?v=43";
-import { openDocViewerModal } from "../components/doc-modal.js?v=4";
+import { openDocViewerModal } from "../components/doc-modal.js?v=5";
 import * as api from "../api.js?v=60";
 
 import { Composer, DEFAULT_AVAILABLE_MODELS, extractUrls } from "../chat/composer.js?v=25";
-import { MessageFeed } from "../chat/message-feed.js?v=34";
+import { MessageFeed } from "../chat/message-feed.js?v=35";
 import { StreamHandler, getRandomPhrase } from "../chat/stream-handler.js?v=8";
 import { STUDY_SYSTEM_PROMPT } from "../chat/study-mode.js?v=2";
 import {
@@ -25,7 +25,7 @@ import {
   downloadBlob,
   buildClientDocxBlob,
   printDocumentToPdf,
-} from "../export.js?v=3";
+} from "../export.js?v=4";
 
 
 

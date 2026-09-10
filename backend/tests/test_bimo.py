@@ -428,7 +428,7 @@ def test_system_prompt_allows_document_generation_and_web_access():
     assert "rate my resume" in DEFAULT_SYSTEM_PROMPT
     assert "full live web search and webpage fetching" in DEFAULT_SYSTEM_PROMPT
     assert "Never tell the user to search" in DEFAULT_SYSTEM_PROMPT
-    assert "Never wrap a bare URL in square brackets" in DEFAULT_SYSTEM_PROMPT
+    assert "Never put a URL inside square brackets" in DEFAULT_SYSTEM_PROMPT
     assert "could not be reached" in DEFAULT_SYSTEM_PROMPT
     assert "ONLY produce a formal standalone document when the user EXPLICITLY commands" not in DEFAULT_SYSTEM_PROMPT
     assert "If in doubt, default to a normal conversational chat response" not in DEFAULT_SYSTEM_PROMPT
@@ -1423,9 +1423,29 @@ def test_should_search_skips_when_attachments_are_present(monkeypatch):
     monkeypatch.setattr(search_router, "_classify", lambda *a, **k: (True, "x"))
 
     needs_search, _ = search_router.should_search(
-        "what are the latest figures in this report?", has_attachments=True
+        "what's in this screenshot?", has_attachments=True
     )
     assert needs_search is False
+
+
+def test_image_plus_which_is_best_still_searches(monkeypatch):
+    """A file on the turn must not block a question that needs live facts."""
+    from app import search_router
+
+    monkeypatch.setattr(
+        search_router,
+        "_classify",
+        lambda query, history=None, reformulate_only=False: (
+            True,
+            "ministral 3 8b vs codestral 2508 benchmarks",
+        ),
+    )
+    needs, query = search_router.should_search(
+        "from these two mistral models which one is best overall",
+        has_attachments=True,
+    )
+    assert needs is True
+    assert query
 
 
 def test_search_classifier_defaults_to_aeon_qwen(monkeypatch):
@@ -1654,6 +1674,9 @@ def test_build_search_context_wraps_results_in_boundary_tags():
     assert context.endswith("</live_web_search>")
     assert "https://example.com/btc" in context
     assert "91,204" in context
+    assert "[https://" not in context
+    assert "](https://" not in context
+    assert "URL: https://example.com/btc" in context
 
 
 def _search_chat_token():

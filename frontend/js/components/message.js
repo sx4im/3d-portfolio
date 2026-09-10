@@ -3,7 +3,7 @@ import { thoughtOrb } from "./orb.js?v=3";
 import { searchCard } from "./search-card.js?v=3";
 import { icon, formatDocIcon } from "../icons.js?v=30";
 import { avatar } from "./avatar.js?v=30";
-import { renderMarkdown } from "./markdown.js?v=32";
+import { renderMarkdown } from "./markdown.js?v=33";
 import { openImageModal } from "./image-modal.js?v=30";
 
 function stripExportDisclaimers(text) {
