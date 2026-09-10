@@ -234,7 +234,6 @@ def test_real_model_ids_use_defaults():
     )
     from app import nvidia_client
 
-    assert DEFAULT_NEXOS_MODEL == "openai/gpt-oss-20b"
     assert REAL_ID_MAP["thinking"] == DEFAULT_STANZA_MODEL
     assert REAL_ID_MAP["deep"]     == DEFAULT_NEXOS_MODEL
     assert VISION_MODEL            == DEFAULT_VISION_MODEL
@@ -505,7 +504,7 @@ def test_iter_response_thinking_toggle_for_deepseek(monkeypatch):
 
     # GPT-OSS supports reasoning_effort
     list(nvidia_client.iter_response([{"role": "user", "content": "hard problem"}],
-                                     model="openai/gpt-oss-20b", thinking=True,
+                                     model="openai/gpt-oss-120b", thinking=True,
                                      reasoning_effort="medium"))
     assert captured["extra_body"]["chat_template_kwargs"]["thinking"] is True
     assert captured["extra_body"]["chat_template_kwargs"]["reasoning_effort"] == "medium"

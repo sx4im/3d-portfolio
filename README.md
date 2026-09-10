@@ -34,7 +34,7 @@ The browser client uses HTML, CSS, and plain ES modules without build tools, fra
 
 - **Passwordless authentication**: Sign in with Google through Supabase OAuth. Tokens are verified using ES256 JWTs against project JWKS keys.
 - **Live streaming**: Responses stream using Server-Sent Events with inline Markdown, syntax-highlighted code blocks, and KaTeX rendering.
-- **Model routing**: Switch between all-round help (Stanza 2.5 powered by Mistral AI), deep reasoning (Nexos 3.0 powered by NVIDIA GPT-OSS), and image generation (Iris 1.0).
+- **Model routing**: Switch between all-round help (Stanza 2.5 powered by Mistral AI), deep reasoning (Nexos 3.0), and image generation (Iris 1.0).
 - **Document parsing**: Drop in PDF, DOCX, XLSX, PPTX, or ZIP files to extract text and analyze contents.
 - **Vision processing**: Attach images to route prompts to a vision model.
 - **Autonomous web search**: Bimo decides on its own when a question needs live results and searches via TinyFish. A search card above the answer shows the query it ran, the pages it read with their freshness, and how long the search took. Full page scraping for pasted URLs.
@@ -67,7 +67,7 @@ The browser client uses HTML, CSS, and plain ES modules without build tools, fra
 ## Quick start
 
 ### Prerequisites
-Python 3.11+, a Supabase account, a [Mistral API key](https://console.mistral.ai/) (powers Stanza 2.5 with `ministral-8b-2512`), and an NVIDIA API key (powers Nexos 3.0 via `openai/gpt-oss-20b`, Vision, and TTS).
+Python 3.11+, a Supabase account, a [Mistral API key](https://console.mistral.ai/) (powers Stanza 2.5 with `ministral-8b-2512`), and an NVIDIA API key (powers Nexos 3.0, Vision, and TTS).
 
 ### 1. Database setup
 Run the SQL scripts in `backend/migrations/` in numerical order inside your Supabase project SQL editor (`0001_init.sql` → `0005_conversation_pinned.sql`):
