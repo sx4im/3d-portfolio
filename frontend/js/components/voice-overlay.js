@@ -796,7 +796,7 @@ export function openVoiceOverlay({ token, sendTurn, onClose } = {}) {
         // Generous safety cap so speech is never prematurely cut off mid-sentence
         await Promise.race([
           speech.done(),
-          new Promise((resolve) => setTimeout(resolve, 3500)),
+          new Promise((resolve) => setTimeout(resolve, 300000)),
         ]);
         if (activeSpeech === speech) activeSpeech = null;
         if (!active || speech.cancelled) return;
@@ -837,6 +837,7 @@ export function openVoiceOverlay({ token, sendTurn, onClose } = {}) {
     let finished = false;
     let flushSent = false;
     let flushReceived = false;
+    let serverAudioDone = false;
     let hasReceivedAudio = false;
     let wsClosed = false;
     let nextPlayTime = 0;
@@ -849,34 +850,42 @@ export function openVoiceOverlay({ token, sendTurn, onClose } = {}) {
 
     const ws = ensureTTSWS();
 
+    function isAudioPlaying() {
+      if (!audioCtx) return false;
+      if (queuedSources.length > 0) return true;
+      if (nextPlayTime > 0 && audioCtx.currentTime < nextPlayTime - 0.02) return true;
+      return false;
+    }
+
     function checkDone() {
       if (cancelled) return;
-      const audioStillPlaying = queuedSources.length > 0 || (audioCtx && nextPlayTime > 0 && audioCtx.currentTime < nextPlayTime);
+      if (isAudioPlaying()) {
+        if (queuedSources.length === 0 && audioCtx && nextPlayTime > audioCtx.currentTime) {
+          const waitMs = Math.max(20, Math.ceil((nextPlayTime - audioCtx.currentTime) * 1000) + 40);
+          setTimeout(() => { if (!cancelled) checkDone(); }, waitMs);
+        }
+        return;
+      }
 
-      if (finished) {
-        if (!audioStillPlaying) {
-          // If all audio playback has finished through the speakers:
-          if (flushReceived || wsClosed || hasReceivedAudio) {
-            if (finishTimer) { clearTimeout(finishTimer); finishTimer = null; }
+      if (!finished) return;
+
+      if (serverAudioDone || wsClosed) {
+        if (finishTimer) { clearTimeout(finishTimer); finishTimer = null; }
+        stopMeter();
+        ttsSource = null;
+        resolveDone();
+        return;
+      }
+
+      if (!finishTimer) {
+        const stallMs = hasReceivedAudio ? 2500 : 1500;
+        finishTimer = setTimeout(() => {
+          if (!cancelled && !isAudioPlaying()) {
             stopMeter();
             ttsSource = null;
             resolveDone();
-            return;
           }
-        }
-
-        if (queuedSources.length === 0 && audioCtx && nextPlayTime > 0 && audioCtx.currentTime < nextPlayTime) {
-          const waitMs = Math.max(20, Math.ceil((nextPlayTime - audioCtx.currentTime) * 1000) + 40);
-          setTimeout(() => { if (!cancelled) checkDone(); }, waitMs);
-        } else if (!audioStillPlaying && !finishTimer) {
-          finishTimer = setTimeout(() => {
-            if (!cancelled) {
-              stopMeter();
-              ttsSource = null;
-              resolveDone();
-            }
-          }, 400);
-        }
+        }, stallMs);
       }
     }
 
@@ -898,11 +907,18 @@ export function openVoiceOverlay({ token, sendTurn, onClose } = {}) {
         if (typeof event.data === "string") {
           try {
             const data = JSON.parse(event.data);
-            if (data.type === "Flushed" || data.type === "SpeechMetadata") {
+            if (data.type === "SpeechMetadata") {
+              serverAudioDone = true;
+              checkDone();
+            } else if (data.type === "Flushed") {
               flushReceived = true;
+              const isFlux = (activeLang?.model || "").startsWith("flux");
+              if (!isFlux) {
+                serverAudioDone = true;
+              }
               checkDone();
             } else if (data.type === "Warning" && (data.code === "NO_ACTIVE_SPEECH" || data.code === "NO_SYNTHESIZABLE_TEXT")) {
-              flushReceived = true;
+              serverAudioDone = true;
               checkDone();
             } else if (data.type === "Error") {
               console.warn("[bimo-voice] Deepgram streaming status:", data.message);
@@ -942,7 +958,6 @@ export function openVoiceOverlay({ token, sendTurn, onClose } = {}) {
 
     function queueAudioBuffer(audioBuffer) {
       if (cancelled || !active || !audioCtx) return;
-      if (finished && (flushReceived || !activeSpeech)) return;
       if (finishTimer) { clearTimeout(finishTimer); finishTimer = null; }
       if (audioCtx.state === "suspended") {
         audioCtx.resume().catch(() => {});
@@ -1043,14 +1058,16 @@ export function openVoiceOverlay({ token, sendTurn, onClose } = {}) {
       }
       checkDone();
 
-      // Fallback: if resolveDone is not triggered within 2.5s of finish, resolve
-      setTimeout(() => {
-        if (!cancelled) {
-          stopMeter();
-          ttsSource = null;
-          resolveDone();
-        }
-      }, 2500);
+      // Fallback only if no audio is ever received (e.g. synthesis error or empty reply)
+      if (!hasReceivedAudio) {
+        setTimeout(() => {
+          if (!cancelled && !hasReceivedAudio && !isAudioPlaying()) {
+            stopMeter();
+            ttsSource = null;
+            resolveDone();
+          }
+        }, 2000);
+      }
     }
 
     function cancel() {
