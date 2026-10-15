@@ -156,6 +156,7 @@ function heroPreview() {
     loop: true,
     muted: true,
     playsinline: true,
+    preload: "auto",
     style: "object-fit: cover; padding: 0; border: none;"
   });
 }

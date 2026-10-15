@@ -2,7 +2,7 @@ import { defineRoute, startRouter, navigate, dispatch } from "./router.js?v=31";
 import { bootstrap, getAuth, onAuthChange } from "./auth.js?v=31";
 import { initThemeSync } from "./prefs.js?v=32";
 import * as api from "./api.js?v=32";
-import { renderLanding } from "./pages/landing.js?v=50";
+import { renderLanding } from "./pages/landing.js?v=51";
 import { renderChat } from "./pages/chat.js?v=168";
 import { renderFeedback } from "./pages/feedback.js?v=70";
 import { renderSettings } from "./pages/settings.js?v=73";
@@ -85,6 +85,28 @@ async function maybeShowOnboarding(auth) {
   } catch {
     /* never block the app if the check fails */
   }
+}
+
+// The installed Android app always launches at "/", so reopen the last app
+// screen instead of a blank new chat. Browser tabs keep the landing page.
+const LAST_ROUTE_KEY = "bimo-last-route";
+if (window.matchMedia("(display-mode: standalone)").matches) {
+  const saved = localStorage.getItem(LAST_ROUTE_KEY);
+  if ((!location.hash || location.hash === "#/") && saved?.startsWith("#/app/")) {
+    history.replaceState(null, "", `${location.pathname}${location.search}${saved}`);
+  }
+  window.addEventListener("hashchange", () => {
+    const { hash } = location;
+    if (hash.startsWith("#/app/") && !hash.startsWith("#/app/chat/incognito")) {
+      localStorage.setItem(LAST_ROUTE_KEY, hash);
+    }
+  });
+}
+
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/sw.js").catch(() => {});
+  });
 }
 
 initThemeSync(); // sync <meta> + react to OS theme changes while on "system"
