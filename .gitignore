@@ -11,3 +11,8 @@ dist/
 build/
 .DS_Store
 graft/
+
+# Android signing credentials
+*.keystore
+*.jks
+*keystore-password.txt
