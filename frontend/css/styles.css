@@ -7678,8 +7678,7 @@ html {
 }
 
 .landing .hero-preview {
-  animation: hero-rise-soft 1400ms cubic-bezier(0.16, 1, 0.3, 1) both;
-  animation-delay: 550ms;
+  animation: none;
 }
 
 /* Scroll-reveal (driven by IntersectionObserver in landing.js) */

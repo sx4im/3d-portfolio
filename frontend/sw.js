@@ -1,7 +1,7 @@
 // Media-only service worker: precaches the two videos so they play instantly,
 // and leaves every other request (HTML, JS, CSS, API) to the network untouched.
 // Bump CACHE whenever hero.mp4 or voice-orb.mp4 change.
-const CACHE = "bmo-media-v1";
+const CACHE = "bmo-media-v2";
 const MEDIA = ["/assets/hero.mp4", "/assets/voice-orb.mp4"];
 
 self.addEventListener("install", (event) => {

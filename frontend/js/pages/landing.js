@@ -157,6 +157,7 @@ function heroPreview() {
     muted: true,
     playsinline: true,
     preload: "auto",
+    poster: "/assets/hero-poster.jpg",
     style: "object-fit: cover; padding: 0; border: none;"
   });
 }
