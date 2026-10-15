@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "io.qzz.bimo.twa",
+      "sha256_cert_fingerprints": [
+        "0C:2E:43:C0:79:6E:43:2C:28:F6:59:14:92:C3:F1:99:9E:9A:E3:5E:65:59:84:A9:63:18:C2:4D:2B:16:02:BA"
+      ]
+    }
+  }
+]
