@@ -1,0 +1,22 @@
+{
+  "id": "013739",
+  "name": "Bmo",
+  "short_name": "Bmo",
+  "description": "Bmo · an AI chat workspace with streaming responses, rich rendering, vision-aware uploads, per-chat models, and voice chat.",
+  "lang": "en",
+  "dir": "ltr",
+  "start_url": "https://bimo.qzz.io/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#ffffff",
+  "theme_color": "#faf9f5",
+  "icons": [
+    {
+      "src": "/assets/favicon.png",
+      "type": "image/png",
+      "sizes": "819x819",
+      "purpose": "any"
+    }
+  ]
+}
