@@ -3305,6 +3305,106 @@ button:hover .icon-dislike,
   color: var(--ink);
 }
 
+/* Phone drawer only. Desktop sidebar is a different element, so these
+   20% bumps never apply there. */
+.sidebar.mobile .sidebar-brand {
+  font-size: calc(24px * 1.2);
+}
+
+.sidebar.mobile .sidebar-nav a,
+.sidebar.mobile .sidebar-nav-new,
+.sidebar.mobile .sidebar-nav-label {
+  font-size: calc(14px * 1.2);
+  gap: calc(10px * 1.2);
+  padding: calc(8px * 1.2) calc(12px * 1.2);
+}
+
+.sidebar.mobile .sidebar-nav-icon,
+.sidebar.mobile .sidebar-nav-new .sidebar-nav-icon,
+.sidebar.mobile .sidebar-nav-icon svg,
+.sidebar.mobile .sidebar-nav-new .sidebar-nav-icon svg {
+  width: calc(18px * 1.2);
+  height: calc(18px * 1.2);
+}
+
+.sidebar.mobile .sidebar-section-head,
+.sidebar.mobile .sidebar-recent-head {
+  font-size: calc(12px * 1.2);
+}
+
+.sidebar.mobile .sidebar-convo-lists .item button.entry,
+.sidebar.mobile .sidebar-recent .item button.entry {
+  min-height: calc(36px * 1.2);
+  padding: calc(8px * 1.2) calc(36px * 1.2) calc(8px * 1.2) calc(12px * 1.2);
+}
+
+.sidebar.mobile .sidebar-convo-lists .item .title,
+.sidebar.mobile .sidebar-recent .item .title {
+  font-size: calc(13.5px * 1.2);
+}
+
+.sidebar.mobile .sidebar-convo-lists .item .item-menu,
+.sidebar.mobile .sidebar-recent .item .item-menu {
+  width: calc(28px * 1.2);
+  height: calc(28px * 1.2);
+}
+
+.sidebar.mobile .sidebar-convo-lists .item .item-menu svg,
+.sidebar.mobile .sidebar-recent .item .item-menu svg {
+  width: calc(16px * 1.2);
+  height: calc(16px * 1.2);
+}
+
+.sidebar.mobile .sidebar-convo-menu {
+  min-width: calc(162px * 1.2);
+}
+
+.sidebar.mobile .sidebar-convo-menu-item {
+  font-size: calc(13px * 1.2);
+  gap: calc(8px * 1.2);
+  padding: calc(7px * 1.2) calc(8px * 1.2);
+}
+
+.sidebar.mobile .sidebar-convo-menu-icon,
+.sidebar.mobile .sidebar-convo-menu-icon svg {
+  width: calc(16px * 1.2);
+  height: calc(16px * 1.2);
+}
+
+.sidebar.mobile .sidebar-convo-lists .empty,
+.sidebar.mobile .sidebar-recent .empty {
+  font-size: calc(13px * 1.2);
+}
+
+.sidebar.mobile .close-mobile {
+  width: calc(34px * 1.2);
+  height: calc(34px * 1.2);
+}
+
+.sidebar.mobile .sidebar-profile .avatar.md {
+  width: calc(36px * 1.2);
+  height: calc(36px * 1.2);
+  font-size: calc(13px * 1.2);
+}
+
+.sidebar.mobile .sidebar-profile .name {
+  font-size: calc(13.5px * 1.2);
+}
+
+.sidebar.mobile .sidebar-profile .email {
+  font-size: calc(11.5px * 1.2);
+}
+
+.sidebar.mobile .sidebar-profile .signout {
+  width: calc(34px * 1.2);
+  height: calc(34px * 1.2);
+}
+
+.sidebar.mobile .sidebar-profile .signout svg {
+  width: calc(17.6px * 1.2);
+  height: calc(17.6px * 1.2);
+}
+
 @media (max-width: 1023px) {
   .sidebar:not(.mobile) {
     display: none;
@@ -7258,7 +7358,7 @@ body:has(.chat-page.is-empty) .tools-menu,
   }
 
   .composer textarea {
-    font-size: 16px;
+    font-size: calc(16px * 1.05);
     /* prevent iOS zoom on focus */
     padding: 6px 2px 2px;
     /* Auto-grow from one line; a touch shorter cap on phones. */
@@ -7268,7 +7368,7 @@ body:has(.chat-page.is-empty) .tools-menu,
   }
 
   .composer-backdrop {
-    font-size: 16px;
+    font-size: calc(16px * 1.05);
     padding: 6px 2px 2px;
     height: 100%;
     min-height: 0;
@@ -7289,7 +7389,7 @@ body:has(.chat-page.is-empty) .tools-menu,
 
   .message .bubble {
     padding: 12px 14px;
-    font-size: 14.5px;
+    font-size: calc(14.5px * 1.05);
   }
 
   .message-attachments img {
