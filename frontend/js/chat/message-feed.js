@@ -14,7 +14,6 @@
  */
 
 import { el, clear } from "../utils.js?v=30";
-import { icon } from "../icons.js?v=48";
 import { readingOrb } from "../components/orb.js?v=3";
 import { searchCard } from "../components/search-card.js?v=3";
 import { renderMarkdown, whenMarkdownReady } from "../components/markdown.js?v=33";
@@ -46,25 +45,18 @@ const IMAGE_GEN_STAGES = [
 ];
 
 export function imageGeneratingNode() {
-  const label = "Creating your image";
-  const stageText = el("span", { class: "image-gen-stage", text: `${IMAGE_GEN_STAGES[0][1]}…` });
+  const stageText = el("span", { class: "status-text image-gen-stage", text: IMAGE_GEN_STAGES[0][1] });
   const node = el("article", { class: "message assistant searching" }, [
     el("div", { class: "body" }, [
-      el("div", { class: "meta" }, [
+      el("div", { class: "meta", role: "status" }, [
         el("span", { class: "author", text: "Bmo" }),
         el("span", { text: "·" }),
-        el("span", { class: "status-text", text: label }),
+        stageText,
       ]),
-      el("div", { class: "image-gen-placeholder", role: "status", "aria-label": label }, [
-        el("span", { class: "image-gen-blob b1" }),
-        el("span", { class: "image-gen-blob b2" }),
-        el("span", { class: "image-gen-blob b3" }),
-        el("span", { class: "image-gen-sweep" }),
-        el("div", { class: "image-gen-caption" }, [
-          el("span", { class: "image-gen-icon", html: icon("imageSparkles", { width: 14, height: 14 }) }),
-          stageText,
-        ]),
-        el("span", { class: "image-gen-progress" }),
+      el("div", { class: "image-gen-placeholder", "aria-hidden": "true" }, [
+        el("span", { class: "image-gen-field" }),
+        el("span", { class: "image-gen-grain" }),
+        el("span", { class: "image-gen-pass" }),
       ]),
     ]),
   ]);
@@ -74,7 +66,7 @@ export function imageGeneratingNode() {
       if (!node.isConnected) return;
       stageText.classList.remove("swap");
       void stageText.offsetWidth;
-      stageText.textContent = `${text}…`;
+      stageText.textContent = text;
       stageText.classList.add("swap");
     }, delay);
   }

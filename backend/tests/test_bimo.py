@@ -227,6 +227,39 @@ def test_image_generation_always_uses_flux3_klein_at_full_steps(monkeypatch):
     assert sent["body"] == {"prompt": "a poster", "seed": 1, "steps": 50, "width": 1024, "height": 1024}
 
 
+def test_image_generation_is_blocked_once_the_usage_limit_is_hit(client, monkeypatch):
+    import time
+    import jwt
+    from app import nvidia_client, store
+
+    token = jwt.encode(
+        {
+            "sub": "img_user", "email": "img@test.com", "aud": "authenticated",
+            "iss": "https://example.supabase.co/auth/v1", "exp": int(time.time()) + 3600,
+        },
+        "test-jwt-secret", algorithm="HS256",
+    )
+    monkeypatch.setattr(
+        "app.routes.media_routes.get_usage_status",
+        lambda uid: {
+            "blocked": True,
+            "session": {"used": 100000, "limit": 100000, "resets_in_seconds": 3600},
+            "weekly": {"used": 0, "limit": 1000000, "resets_in_seconds": 0},
+        },
+    )
+    calls = []
+    monkeypatch.setattr(nvidia_client, "generate_image", lambda *a, **k: calls.append(1))
+    monkeypatch.setattr(store, "add_message", lambda *a, **k: calls.append(1))
+
+    res = client.post(
+        "/images/generate", json={"prompt": "a cat"}, headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert res.status_code == 429
+    assert "usage limit" in res.get_json()["detail"]
+    assert calls == []
+
+
 def test_health_reports_the_live_image_model(client):
     assert client.get("/health").get_json()["image_model"] == "black-forest-labs/flux-3-image-klein"
 

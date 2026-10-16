@@ -16,7 +16,7 @@ import { openVoiceOverlay } from "../components/voice-overlay.js?v=55";
 import * as api from "../api.js?v=61";
 
 import { Composer, DEFAULT_AVAILABLE_MODELS, extractUrls } from "../chat/composer.js?v=26";
-import { MessageFeed } from "../chat/message-feed.js?v=37";
+import { MessageFeed } from "../chat/message-feed.js?v=38";
 import { StreamHandler, getRandomPhrase } from "../chat/stream-handler.js?v=8";
 import { STUDY_SYSTEM_PROMPT } from "../chat/study-mode.js?v=3";
 import {

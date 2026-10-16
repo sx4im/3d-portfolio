@@ -17,6 +17,7 @@ from ..auth import require_user, user_from_token
 from ..config import (
     IMAGE_MODEL_ID,
     IMAGE_USAGE_TOKENS,
+    SESSION_LIMIT,
     WHISPER_MODEL,
     get_deepgram_api_key,
     get_deepgram_tts_model,
@@ -25,7 +26,7 @@ from ..config import (
     upload_type_allowed,
 )
 from ..limiter import limiter
-from .helpers import bad_request, friendly_error
+from .helpers import bad_request, friendly_error, get_usage_status, human_duration
 
 logger = logging.getLogger("bmo.routes.media")
 
@@ -69,6 +70,15 @@ def generate_image_route(user):
         return bad_request("attachments must be a list", 422)
     if conversation_id is not None and not isinstance(conversation_id, str):
         return bad_request("conversation_id must be a string", 422)
+
+    usage = get_usage_status(user.id)
+    if usage["blocked"]:
+        over = usage["session"] if usage["session"]["used"] >= SESSION_LIMIT else usage["weekly"]
+        return bad_request(
+            "You've reached your usage limit for now. "
+            f"Access resets in {human_duration(over['resets_in_seconds'])}.",
+            429,
+        )
 
     refusal = image_safety.check_prompt(prompt)
 

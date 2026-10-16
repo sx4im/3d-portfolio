@@ -5049,89 +5049,69 @@ body:has(.chat-page.is-empty) .tools-menu,
   overflow: hidden;
   isolation: isolate;
   border-radius: var(--r-md);
-  border: 1px solid var(--hairline);
   background: var(--surface-soft);
-  animation: image-gen-breathe 3.2s ease-in-out infinite;
 }
 
-/* Soft colour fields drifting into place, like a picture developing. */
-.image-gen-blob {
+/* A slow-turning colour field comes into focus while the grain over it thins
+   out, so the box reads as an image being denoised. */
+.image-gen-field {
   position: absolute;
-  z-index: 0;
-  width: 70%;
-  aspect-ratio: 1;
-  border-radius: 50%;
+  inset: -40%;
+  background:
+    radial-gradient(circle at 32% 30%, var(--primary) 0, transparent 42%),
+    radial-gradient(circle at 70% 68%, var(--accent-teal) 0, transparent 44%),
+    radial-gradient(circle at 66% 28%, var(--accent-amber) 0, transparent 36%);
   filter: blur(26px);
-  opacity: 0.55;
-  will-change: transform;
+  opacity: 0.18;
+  animation:
+    image-gen-turn 14s linear infinite,
+    image-gen-focus 9s cubic-bezier(0.3, 0, 0.2, 1) forwards;
 }
 
-.image-gen-blob.b1 {
-  background: var(--primary);
-  top: -18%;
-  left: -14%;
-  animation: image-gen-drift-a 7s ease-in-out infinite alternate;
+@keyframes image-gen-turn {
+  to { transform: rotate(360deg); }
 }
 
-.image-gen-blob.b2 {
-  background: var(--accent-teal);
-  bottom: -22%;
-  right: -16%;
-  animation: image-gen-drift-b 8s ease-in-out infinite alternate;
+@keyframes image-gen-focus {
+  to { opacity: 0.75; }
 }
 
-.image-gen-blob.b3 {
-  background: var(--accent-amber);
-  width: 50%;
-  top: 30%;
-  left: 28%;
-  opacity: 0.45;
-  animation: image-gen-drift-c 6s ease-in-out infinite alternate;
-}
-
-@keyframes image-gen-drift-a {
-  to { transform: translate(38%, 30%) scale(1.15); }
-}
-
-@keyframes image-gen-drift-b {
-  to { transform: translate(-34%, -28%) scale(0.9); }
-}
-
-@keyframes image-gen-drift-c {
-  0% { transform: translate(-30%, 20%) scale(0.85); }
-  100% { transform: translate(25%, -25%) scale(1.2); }
-}
-
-.image-gen-sweep {
+.image-gen-grain {
   position: absolute;
-  inset: 0;
-  z-index: 1;
-  background: linear-gradient(115deg, transparent 35%, rgba(255, 255, 255, 0.28) 50%, transparent 65%);
-  background-size: 250% 100%;
-  animation: image-gen-shimmer 2.4s ease-in-out infinite;
-  mix-blend-mode: soft-light;
+  inset: -50%;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3CfeComponentTransfer%3E%3CfeFuncR type='linear' slope='2.2' intercept='-.6'/%3E%3CfeFuncG type='linear' slope='2.2' intercept='-.6'/%3E%3CfeFuncB type='linear' slope='2.2' intercept='-.6'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 140px 140px;
+  mix-blend-mode: overlay;
+  opacity: 1;
+  animation:
+    image-gen-grain 0.6s steps(4) infinite,
+    image-gen-denoise 9s cubic-bezier(0.3, 0, 0.2, 1) forwards;
 }
 
-@keyframes image-gen-breathe {
-  0%, 100% { box-shadow: 0 0 0 0 var(--primary-soft); }
-  50% { box-shadow: 0 0 0 4px var(--primary-soft); }
+@keyframes image-gen-grain {
+  0% { transform: translate(0, 0); }
+  25% { transform: translate(-6%, 4%); }
+  50% { transform: translate(5%, -5%); }
+  75% { transform: translate(-3%, -7%); }
+  100% { transform: translate(6%, 5%); }
 }
 
-.image-gen-progress {
+@keyframes image-gen-denoise {
+  to { opacity: 0.18; }
+}
+
+/* A soft light sweep, left to right. */
+.image-gen-pass {
   position: absolute;
-  left: 0;
-  bottom: 0;
-  z-index: 2;
-  height: 2px;
-  width: 100%;
-  background: var(--primary);
-  transform-origin: left;
-  transform: scaleX(0.04);
-  animation: image-gen-progress 10s cubic-bezier(0.2, 0.7, 0.3, 1) forwards;
+  inset: 0 auto 0 0;
+  width: 60%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  animation: image-gen-pass 2.6s cubic-bezier(0.45, 0, 0.55, 1) infinite;
 }
 
-@keyframes image-gen-progress {
-  to { transform: scaleX(0.92); }
+@keyframes image-gen-pass {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(170%); }
 }
 
 @keyframes image-gen-shimmer {
@@ -5144,45 +5124,23 @@ body:has(.chat-page.is-empty) .tools-menu,
   }
 }
 
-.image-gen-caption {
-  position: absolute;
-  left: 10px;
-  bottom: 12px;
-  z-index: 2;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  max-width: calc(100% - 20px);
-  font-size: 11.5px;
-  color: var(--ink);
-  background: color-mix(in srgb, var(--canvas) 78%, transparent);
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
-  border: 1px solid var(--hairline);
-  border-radius: var(--r-pill);
-  padding: 4px 10px 4px 8px;
-  white-space: nowrap;
+.message .meta .image-gen-stage {
+  display: inline-block;
+  color: transparent;
+  background: linear-gradient(90deg, var(--muted) 35%, var(--ink) 50%, var(--muted) 65%);
+  background-size: 250% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  animation: image-gen-text 2.2s linear infinite;
 }
 
-.image-gen-icon {
-  display: inline-grid;
-  place-items: center;
-  color: var(--primary);
-  animation: image-gen-twinkle 1.6s ease-in-out infinite;
+.message .meta .image-gen-stage.swap {
+  animation: image-gen-text 2.2s linear infinite, image-gen-stage-in 0.35s ease-out;
 }
 
-@keyframes image-gen-twinkle {
-  0%, 100% { transform: scale(1) rotate(0deg); opacity: 1; }
-  50% { transform: scale(1.15) rotate(12deg); opacity: 0.7; }
-}
-
-.image-gen-stage {
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.image-gen-stage.swap {
-  animation: image-gen-stage-in 0.35s ease-out;
+@keyframes image-gen-text {
+  from { background-position: 100% 0; }
+  to { background-position: 0% 0; }
 }
 
 @keyframes image-gen-stage-in {
@@ -5453,17 +5411,22 @@ body:has(.chat-page.is-empty) .tools-menu,
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .image-gen-placeholder,
-  .image-gen-blob,
-  .image-gen-sweep,
-  .image-gen-icon,
-  .image-gen-stage.swap,
+  .image-gen-field,
+  .image-gen-grain,
+  .image-gen-pass,
+  .message .meta .image-gen-stage,
+  .message .meta .image-gen-stage.swap,
   .message.entering .generated-image img {
     animation: none;
   }
 
-  .image-gen-progress {
-    display: none;
+  .image-gen-field { opacity: 0.6; }
+  .image-gen-grain { opacity: 0.2; }
+  .image-gen-pass { display: none; }
+
+  .message .meta .image-gen-stage {
+    color: var(--muted);
+    background: none;
   }
 }
 
