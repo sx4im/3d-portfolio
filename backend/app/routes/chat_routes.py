@@ -23,7 +23,12 @@ from ..config import (
     get_vision_model,
 )
 from ..limiter import limiter
-from ..prompts import AEON_SYSTEM_PROMPT, image_settings_reply
+from ..prompts import (
+    AEON_SYSTEM_PROMPT,
+    earlier_attachment_note,
+    image_settings_reply,
+    wrap_attachment_content,
+)
 from .helpers import (
     MODEL_BUSY_REPLY,
     bad_request,
@@ -146,6 +151,121 @@ def _recent_history_images(history: list[dict]) -> list[dict]:
     return []
 
 
+# Text stand-in saved on each attachment so later turns can run on the
+# user's text model instead of the vision model.
+TEXT_CONTEXT_KEY = "text_context"
+MAX_DOC_CONTEXT_CHARS = 8000
+_ATTACHMENT_TAG_RE = re.compile(r"^<attachment_data[^>]*>\n|\n</attachment_data>$")
+_describing: set[str] = set()
+_describing_lock = threading.Lock()
+
+
+def _is_image(a: dict) -> bool:
+    return (a.get("content_type") or "").startswith("image/")
+
+
+def _latest_attachment_message(history: list[dict]) -> dict | None:
+    for m in reversed(history):
+        if m.get("role") == "user" and m.get("attachments"):
+            return m
+    return None
+
+
+def _images_missing_context(attachments) -> list[dict]:
+    return [
+        a for a in (attachments or [])
+        if isinstance(a, dict) and _is_image(a) and a.get("path") and not a.get(TEXT_CONTEXT_KEY)
+    ]
+
+
+def _history_with_attachment_context(history: list[dict]) -> list[dict]:
+    out = []
+    for m in history:
+        notes = [
+            earlier_attachment_note(a[TEXT_CONTEXT_KEY], is_image=_is_image(a))
+            for a in (m.get("attachments") or [])
+            if isinstance(a, dict) and a.get(TEXT_CONTEXT_KEY)
+        ]
+        if m.get("role") == "user" and notes:
+            m = {**m, "content": "\n\n".join([*notes, m.get("content") or ""]).strip()}
+        out.append(m)
+    return out
+
+
+def _doc_text_context(filename: str, parts: list[dict]) -> str:
+    raw = "\n\n".join(
+        _ATTACHMENT_TAG_RE.sub("", p["text"]) for p in parts if p.get("type") == "text" and p.get("text")
+    ).strip()
+    if not raw:
+        return ""
+    if len(raw) > MAX_DOC_CONTEXT_CHARS:
+        raw = raw[:MAX_DOC_CONTEXT_CHARS].rstrip() + "\n[rest of the file truncated]"
+    return wrap_attachment_content(filename, raw)
+
+
+def _image_part(a: dict, user_id: str) -> dict | None:
+    path = a.get("path")
+    if path and not user_owns_path(user_id, path):
+        return None
+    if path:
+        try:
+            img_bytes = store.download_attachment(path, user_id=user_id)
+            mime = a.get("content_type") or "image/png"
+            b64 = base64.b64encode(img_bytes).decode("ascii")
+            return {"type": "image_url", "image_url": {"url": f"data:{mime};base64,{b64}"}}
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("chat: failed to inline image path=%s err=%s", path, exc)
+    supa = os.environ.get("SUPABASE_URL", "").rstrip("/")
+    if supa and str(a.get("url", "")).startswith(supa + "/"):
+        return {"type": "image_url", "image_url": {"url": a["url"]}}
+    return None
+
+
+def _describe_with_retry(image_part: dict) -> str:
+    for delay in (0, 2.0, 5.0):
+        time.sleep(delay)
+        try:
+            return nvidia_client.describe_image(image_part)
+        except Exception as exc:  # noqa: BLE001
+            if not is_transient_model_error(exc):
+                raise
+            logger.warning("chat: image description busy, retrying: %s", exc)
+    return ""
+
+
+def _describe_attachments_in_background(message_id: str, user_id: str, attachments) -> None:
+    """Save a text version of each image on its message, off the request path."""
+    if not message_id or not _images_missing_context(attachments):
+        return
+    with _describing_lock:
+        if message_id in _describing:
+            return
+        _describing.add(message_id)
+
+    def run():
+        try:
+            updated = [dict(a) if isinstance(a, dict) else a for a in attachments]
+            changed = False
+            for a in _images_missing_context(updated):
+                part = _image_part(a, user_id)
+                if not part:
+                    continue
+                text = _describe_with_retry(part)
+                if text:
+                    a[TEXT_CONTEXT_KEY] = wrap_attachment_content(a.get("filename") or "image", text)
+                    changed = True
+            if changed:
+                store.update_message_attachments(message_id, user_id, updated)
+                logger.info("chat: saved image text context for message=%s", message_id)
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("chat: image description failed for message=%s: %s", message_id, exc)
+        finally:
+            with _describing_lock:
+                _describing.discard(message_id)
+
+    threading.Thread(target=run, name="bmo-image-context", daemon=True).start()
+
+
 # ---------- chat endpoints ----------
 
 @chat_bp.post("/chat")
@@ -177,6 +297,8 @@ def chat(user):
         return bad_request("stream_id must be a short string", 422)
     if not isinstance(attachments, list) or not all(isinstance(a, dict) for a in attachments):
         return bad_request("attachments must be a list", 422)
+    for a in attachments:
+        a.pop(TEXT_CONTEXT_KEY, None)
     if model is not None and not isinstance(model, str):
         return bad_request("model must be a string", 422)
     if model and model not in ALL_VALID_MODEL_IDS:
@@ -280,8 +402,15 @@ def chat(user):
     has_any_attachment = bool(attachments)
     images_with_url = [a for a in image_attachments if a.get("url")]
 
-    history_had_attachment = any(m.get("attachments") for m in history)
-    conversation_is_visual = has_any_attachment or history_had_attachment
+    # A turn that brings attachments goes to the vision model. Later turns use
+    # the user's text model with saved text versions of those attachments,
+    # unless the latest images have no text version yet.
+    latest_attachment_msg = _latest_attachment_message(history)
+    followup_needs_vision = bool(
+        latest_attachment_msg and _images_missing_context(latest_attachment_msg.get("attachments"))
+    )
+    conversation_is_visual = has_any_attachment or followup_needs_vision
+    model_history = _history_with_attachment_context(history)
 
     if conversation_is_visual and not images_with_url:
         carried = _recent_history_images(history)
@@ -307,6 +436,9 @@ def chat(user):
         parts = document_processor.process_attachment(a, _scoped_download)
         if parts:
             doc_parts.extend(parts)
+            text_context = _doc_text_context(a.get("filename") or "file", parts)
+            if text_context:
+                a[TEXT_CONTEXT_KEY] = text_context
         else:
             failed_files.append(a.get("filename", "file"))
 
@@ -318,25 +450,9 @@ def chat(user):
     content_parts.extend(doc_parts)
 
     for a in images_with_url:
-        img_inlined = False
-        if a.get("path") and not user_owns_path(user.id, a.get("path")):
-            continue
-        if a.get("path"):
-            try:
-                img_bytes = store.download_attachment(a["path"], user_id=user.id)
-                mime = a.get("content_type") or "image/png"
-                b64 = base64.b64encode(img_bytes).decode("ascii")
-                content_parts.append({
-                    "type": "image_url",
-                    "image_url": {"url": f"data:{mime};base64,{b64}"},
-                })
-                img_inlined = True
-            except Exception as exc:  # noqa: BLE001
-                logger.warning("chat: failed to inline image path=%s err=%s", a.get("path"), exc)
-        if not img_inlined:
-            supa = os.environ.get("SUPABASE_URL", "").rstrip("/")
-            if supa and str(a.get("url", "")).startswith(supa + "/"):
-                content_parts.append({"type": "image_url", "image_url": {"url": a["url"]}})
+        part = _image_part(a, user.id)
+        if part:
+            content_parts.append(part)
 
     # Held as a reference so an auto-search can prepend live results to the
     # user's turn after streaming has already started (see generate()).
@@ -541,13 +657,13 @@ def chat(user):
                 if is_first_batch:
                     if conversation_is_visual:
                         messages_payload = nvidia_client.build_messages_for_vision(
-                            history, batch_content,
+                            model_history, batch_content,
                         )
                     else:
                         if chosen_friendly == "aeon":
                             extra_sys = convo.get("system_prompt")
                             messages_payload = nvidia_client.build_messages(
-                                history,
+                                model_history,
                                 batch_content,
                                 base_system_prompt=AEON_SYSTEM_PROMPT,
                                 system_prompt=extra_sys,
@@ -555,13 +671,13 @@ def chat(user):
                         else:
                             active_sys_prompt = convo.get("system_prompt")
                             messages_payload = nvidia_client.build_messages(
-                                history,
+                                model_history,
                                 batch_content,
                                 system_prompt=active_sys_prompt,
                             )
                 else:
                     messages_payload = nvidia_client.build_continuation_messages(
-                        history, batch_content,
+                        model_history, batch_content,
                     )
 
                 if use_batches and len(batches) > 1:
@@ -662,6 +778,13 @@ def chat(user):
                 yield sse_event({"type": "user_message", "data": user_message})
                 if assistant_message:
                     yield sse_event({"type": "assistant_message", "data": assistant_message})
+
+                if has_image_attachment:
+                    _describe_attachments_in_background(user_message.get("id"), user.id, attachments)
+                elif followup_needs_vision:
+                    _describe_attachments_in_background(
+                        latest_attachment_msg.get("id"), user.id, latest_attachment_msg.get("attachments"),
+                    )
 
                 if is_first_turn and message_text:
                     convo_id_for_title = convo["id"]

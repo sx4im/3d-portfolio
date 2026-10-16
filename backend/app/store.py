@@ -285,6 +285,12 @@ def add_message(
     return msg
 
 
+def update_message_attachments(message_id: str, user_id: str, attachments: list) -> None:
+    if not message_belongs_to_user(message_id, user_id):
+        raise PermissionError("message not found")
+    _execute(supabase().table("messages").update({"attachments": attachments}).eq("id", message_id))
+
+
 def message_belongs_to_user(message_id: str, user_id: str) -> bool:
     msg = _execute(
         supabase()

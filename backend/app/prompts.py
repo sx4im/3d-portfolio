@@ -257,6 +257,25 @@ def wrap_attachment_content(filename: str, content: str) -> str:
     return f'<attachment_data filename="{safe_name}">\n{content}\n</attachment_data>'
 
 
+IMAGE_CONTEXT_PROMPT = (
+    "Describe this image so someone who cannot see it can answer follow-up "
+    "questions about it. Transcribe every piece of visible text verbatim. Keep "
+    "the structure: lists, tables, flowchart boxes in order and what each arrow "
+    "connects, labels, numbers, axes. Then note the key objects, people, colors, "
+    "and layout. Plain text, no preamble, no opinions, under 350 words."
+)
+
+
+def earlier_attachment_note(text_context: str, *, is_image: bool) -> str:
+    """Text stand-in for a past attachment, for turns served by a text-only model."""
+    kind = "image" if is_image else "file"
+    return (
+        f"[The user attached this {kind} earlier in the chat. You cannot see it "
+        "now, so answer from this text version. If they ask about a detail it "
+        f"does not cover, ask them to attach the {kind} again.]\n{text_context}"
+    )
+
+
 def wrap_search_results(summary: str, results_formatted: str, current_time_str: str) -> str:
     """Format live web search context with authoritative boundary tags."""
     return (

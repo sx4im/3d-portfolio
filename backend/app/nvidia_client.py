@@ -56,10 +56,12 @@ from .config import (
     DEFAULT_MODEL,
     get_nexos_model,
     get_stanza_model,
+    get_vision_model,
 )
 from .prompts import (
     CONTINUATION_VISION_PROMPT,
     DEFAULT_SYSTEM_PROMPT,
+    IMAGE_CONTEXT_PROMPT,
     TITLE_PROMPT,
     VISION_SYSTEM_PROMPT,
 )
@@ -1041,6 +1043,19 @@ def complete(
         elif ev["type"] == "done":
             return ev["content"]
     return "".join(text)
+
+
+def describe_image(image_part: dict) -> str:
+    """Text version of one image, so text-only models can answer follow-ups about it."""
+    messages = [{
+        "role": "user",
+        "content": [{"type": "text", "text": IMAGE_CONTEXT_PROMPT}, image_part],
+    }]
+    content = ""
+    for ev in iter_response(messages, model=get_vision_model(), max_tokens=900, thinking=False):
+        if ev["type"] == "done":
+            content = ev["content"] or ""
+    return content.strip()
 
 
 def generate_title(user_message: str, assistant_reply: str) -> Optional[str]:
