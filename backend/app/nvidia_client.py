@@ -177,6 +177,9 @@ def _is_klein(model: str) -> bool:
 
 def _default_image_steps(model: str) -> int:
     m = model.lower()
+    # FLUX 3 Klein on NVIDIA is the undistilled base; 4 steps garbles text.
+    if "flux-3" in m or "flux.3" in m:
+        return 50
     if "schnell" in m or "klein" in m:
         return 4
     return 50

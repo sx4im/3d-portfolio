@@ -204,7 +204,27 @@ def test_real_model_ids_use_defaults():
     # "image" is a conversation model but has no chat-completions backing id.
     assert "image" not in REAL_ID_MAP
     # Image-generation model (env-swappable, pinned to the default).
-    assert nvidia_client.image_model() == "black-forest-labs/flux.2-klein-4b"
+    assert nvidia_client.image_model() == "black-forest-labs/flux-3-image-klein"
+
+
+def test_flux3_klein_runs_full_steps_without_cfg_or_mode(monkeypatch):
+    from app import nvidia_client
+
+    sent = {}
+
+    def fake_post(url, key, body):
+        sent.update(url=url, body=body)
+        return {"artifacts": [{"base64": "", "finishReason": "SUCCESS"}]}
+
+    monkeypatch.setattr(nvidia_client, "_post_image", fake_post)
+    monkeypatch.setattr(nvidia_client, "_read_api_key", lambda *a, **k: "k")
+    with pytest.raises(RuntimeError):
+        nvidia_client.generate_image("a poster", model="black-forest-labs/flux-3-image-klein", seed=1)
+
+    assert sent["url"].endswith("/black-forest-labs/flux-3-image-klein")
+    assert sent["body"]["steps"] == 50
+    assert "cfg_scale" not in sent["body"] and "mode" not in sent["body"]
+    assert nvidia_client._default_image_steps("black-forest-labs/flux.2-klein-4b") == 4
 
 
 def test_real_model_ids_follow_env(monkeypatch):
