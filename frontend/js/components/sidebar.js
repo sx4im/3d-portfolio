@@ -65,9 +65,19 @@ function menuItem({ label, iconName, danger = false, onClick }) {
 
 function positionConvoMenu(menu, trigger) {
   const rect = trigger.getBoundingClientRect();
-  const menuWidth = 162;
-  menu.style.top = `${rect.bottom + 6}px`;
-  menu.style.left = `${Math.max(8, rect.right - menuWidth)}px`;
+  const shell = menu.closest(".sidebar") || document.body;
+  const bounds = shell.getBoundingClientRect();
+  const menuWidth = menu.offsetWidth || 196;
+  const menuHeight = menu.offsetHeight || 188;
+  let top = rect.bottom - bounds.top + 8;
+  let left = rect.right - bounds.left - menuWidth;
+  if (left < 8) left = 8;
+  if (left + menuWidth > bounds.width - 8) left = Math.max(8, bounds.width - menuWidth - 8);
+  if (top + menuHeight > bounds.height - 8) {
+    top = Math.max(8, rect.top - bounds.top - menuHeight - 8);
+  }
+  menu.style.top = `${Math.round(top)}px`;
+  menu.style.left = `${Math.round(left)}px`;
 }
 
 function toggleConvoMenu(id, menu, trigger) {
