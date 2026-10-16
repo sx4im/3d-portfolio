@@ -3306,103 +3306,103 @@ button:hover .icon-dislike,
 }
 
 /* Phone drawer only. Desktop sidebar is a different element, so these
-   10% bumps never apply there. */
+   5% bumps never apply there. */
 .sidebar.mobile .sidebar-brand {
-  font-size: calc(24px * 1.1);
+  font-size: calc(24px * 1.05);
 }
 
 .sidebar.mobile .sidebar-nav a,
 .sidebar.mobile .sidebar-nav-new,
 .sidebar.mobile .sidebar-nav-label {
-  font-size: calc(14px * 1.1);
-  gap: calc(10px * 1.1);
-  padding: calc(8px * 1.1) calc(12px * 1.1);
+  font-size: calc(14px * 1.05);
+  gap: calc(10px * 1.05);
+  padding: calc(8px * 1.05) calc(12px * 1.05);
 }
 
 .sidebar.mobile .sidebar-nav-icon,
 .sidebar.mobile .sidebar-nav-new .sidebar-nav-icon,
 .sidebar.mobile .sidebar-nav-icon svg,
 .sidebar.mobile .sidebar-nav-new .sidebar-nav-icon svg {
-  width: calc(18px * 1.1);
-  height: calc(18px * 1.1);
+  width: calc(18px * 1.05);
+  height: calc(18px * 1.05);
 }
 
 .sidebar.mobile .sidebar-section-head,
 .sidebar.mobile .sidebar-recent-head {
-  font-size: calc(12px * 1.1);
+  font-size: calc(12px * 1.05);
 }
 
 .sidebar.mobile .sidebar-convo-lists .item button.entry,
 .sidebar.mobile .sidebar-recent .item button.entry {
-  min-height: calc(36px * 1.1);
-  padding: calc(8px * 1.1) calc(36px * 1.1) calc(8px * 1.1) calc(12px * 1.1);
+  min-height: calc(36px * 1.05);
+  padding: calc(8px * 1.05) calc(36px * 1.05) calc(8px * 1.05) calc(12px * 1.05);
 }
 
 .sidebar.mobile .sidebar-convo-lists .item .title,
 .sidebar.mobile .sidebar-recent .item .title {
-  font-size: calc(13.5px * 1.1);
+  font-size: calc(13.5px * 1.05);
 }
 
 .sidebar.mobile .sidebar-convo-lists .item .item-menu,
 .sidebar.mobile .sidebar-recent .item .item-menu {
-  width: calc(28px * 1.1);
-  height: calc(28px * 1.1);
+  width: calc(28px * 1.05);
+  height: calc(28px * 1.05);
 }
 
 .sidebar.mobile .sidebar-convo-lists .item .item-menu svg,
 .sidebar.mobile .sidebar-recent .item .item-menu svg {
-  width: calc(16px * 1.1);
-  height: calc(16px * 1.1);
+  width: calc(16px * 1.05);
+  height: calc(16px * 1.05);
 }
 
 .sidebar.mobile .sidebar-convo-menu {
-  min-width: calc(162px * 1.1);
+  min-width: calc(162px * 1.05);
 }
 
 .sidebar.mobile .sidebar-convo-menu-item {
-  font-size: calc(13px * 1.1);
-  gap: calc(8px * 1.1);
-  padding: calc(7px * 1.1) calc(8px * 1.1);
+  font-size: calc(13px * 1.05);
+  gap: calc(8px * 1.05);
+  padding: calc(7px * 1.05) calc(8px * 1.05);
 }
 
 .sidebar.mobile .sidebar-convo-menu-icon,
 .sidebar.mobile .sidebar-convo-menu-icon svg {
-  width: calc(16px * 1.1);
-  height: calc(16px * 1.1);
+  width: calc(16px * 1.05);
+  height: calc(16px * 1.05);
 }
 
 .sidebar.mobile .sidebar-convo-lists .empty,
 .sidebar.mobile .sidebar-recent .empty {
-  font-size: calc(13px * 1.1);
+  font-size: calc(13px * 1.05);
 }
 
 .sidebar.mobile .close-mobile {
-  width: calc(34px * 1.1);
-  height: calc(34px * 1.1);
+  width: calc(34px * 1.05);
+  height: calc(34px * 1.05);
 }
 
 .sidebar.mobile .sidebar-profile .avatar.md {
-  width: calc(36px * 1.1);
-  height: calc(36px * 1.1);
-  font-size: calc(13px * 1.1);
+  width: calc(36px * 1.05);
+  height: calc(36px * 1.05);
+  font-size: calc(13px * 1.05);
 }
 
 .sidebar.mobile .sidebar-profile .name {
-  font-size: calc(13.5px * 1.1);
+  font-size: calc(13.5px * 1.05);
 }
 
 .sidebar.mobile .sidebar-profile .email {
-  font-size: calc(11.5px * 1.1);
+  font-size: calc(11.5px * 1.05);
 }
 
 .sidebar.mobile .sidebar-profile .signout {
-  width: calc(34px * 1.1);
-  height: calc(34px * 1.1);
+  width: calc(34px * 1.05);
+  height: calc(34px * 1.05);
 }
 
 .sidebar.mobile .sidebar-profile .signout svg {
-  width: calc(17.6px * 1.1);
-  height: calc(17.6px * 1.1);
+  width: calc(17.6px * 1.05);
+  height: calc(17.6px * 1.05);
 }
 
 @media (max-width: 1023px) {
