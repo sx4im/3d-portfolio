@@ -15,8 +15,8 @@ import { whenMarkdownReady } from "../components/markdown.js?v=33";
 import { openVoiceOverlay } from "../components/voice-overlay.js?v=55";
 import * as api from "../api.js?v=61";
 
-import { Composer, DEFAULT_AVAILABLE_MODELS, extractUrls } from "../chat/composer.js?v=25";
-import { MessageFeed } from "../chat/message-feed.js?v=36";
+import { Composer, DEFAULT_AVAILABLE_MODELS, extractUrls } from "../chat/composer.js?v=26";
+import { MessageFeed } from "../chat/message-feed.js?v=37";
 import { StreamHandler, getRandomPhrase } from "../chat/stream-handler.js?v=8";
 import { STUDY_SYSTEM_PROMPT } from "../chat/study-mode.js?v=3";
 import {
@@ -868,7 +868,10 @@ export async function renderChat({ id, incognito }) {
       }
       messages = messages.filter((x) => x.id !== optimisticUser.id);
       messages.push(res?.user_message || optimisticUser);
-      if (res?.assistant_message) messages.push(res.assistant_message);
+      if (res?.assistant_message) {
+        messages.push(res.assistant_message);
+        enteringId = res.assistant_message.id;
+      }
     } catch (err) {
       messages = messages.filter((x) => x.id !== optimisticUser.id);
       toast(err.message || "Couldn't create image.", { tone: "error" });
@@ -917,6 +920,7 @@ export async function renderChat({ id, incognito }) {
           imagePollTimer = null;
           conversation = data.conversation || conversation;
           messages = msgs;
+          enteringId = last.id;
           imageGenerating = false;
           composer.isImageGenerating = false;
           composer.renderModelBadge(incognito);

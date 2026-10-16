@@ -37,23 +37,48 @@ export function emptyStreamView({ incognito, user, template } = {}) {
   ]);
 }
 
+// Paced to Iris 2.0's usual ~8s render; the last stage holds until it lands.
+const IMAGE_GEN_STAGES = [
+  [0, "Reading your prompt"],
+  [1800, "Sketching the scene"],
+  [4200, "Adding detail"],
+  [7000, "Finishing touches"],
+];
+
 export function imageGeneratingNode() {
   const label = "Creating your image";
-  return el("article", { class: "message assistant searching" }, [
+  const stageText = el("span", { class: "image-gen-stage", text: `${IMAGE_GEN_STAGES[0][1]}…` });
+  const node = el("article", { class: "message assistant searching" }, [
     el("div", { class: "body" }, [
       el("div", { class: "meta" }, [
         el("span", { class: "author", text: "Bmo" }),
         el("span", { text: "·" }),
         el("span", { class: "status-text", text: label }),
       ]),
-      el("div", { class: "image-gen-placeholder" }, [
+      el("div", { class: "image-gen-placeholder", role: "status", "aria-label": label }, [
+        el("span", { class: "image-gen-blob b1" }),
+        el("span", { class: "image-gen-blob b2" }),
+        el("span", { class: "image-gen-blob b3" }),
+        el("span", { class: "image-gen-sweep" }),
         el("div", { class: "image-gen-caption" }, [
-          el("span", { html: icon("imageSparkles", { width: 15, height: 15 }) }),
-          el("span", { text: `${label}…` }),
+          el("span", { class: "image-gen-icon", html: icon("imageSparkles", { width: 14, height: 14 }) }),
+          stageText,
         ]),
+        el("span", { class: "image-gen-progress" }),
       ]),
     ]),
   ]);
+
+  for (const [delay, text] of IMAGE_GEN_STAGES.slice(1)) {
+    setTimeout(() => {
+      if (!node.isConnected) return;
+      stageText.classList.remove("swap");
+      void stageText.offsetWidth;
+      stageText.textContent = `${text}…`;
+      stageText.classList.add("swap");
+    }, delay);
+  }
+  return node;
 }
 
 // Status row for a pasted link being fetched. A web search gets the richer

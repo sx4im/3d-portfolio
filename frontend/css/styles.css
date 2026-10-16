@@ -5045,14 +5045,93 @@ body:has(.chat-page.is-empty) .tools-menu,
   width: 220px;
   max-width: 100%;
   aspect-ratio: 1 / 1;
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
   border-radius: var(--r-md);
   border: 1px solid var(--hairline);
-  background:
-    linear-gradient(110deg, var(--surface-soft) 30%, var(--surface-card) 50%, var(--surface-soft) 70%);
-  background-size: 220% 100%;
-  animation: image-gen-shimmer 1.4s ease-in-out infinite;
-  display: grid;
-  place-items: center;
+  background: var(--surface-soft);
+  animation: image-gen-breathe 3.2s ease-in-out infinite;
+}
+
+/* Soft colour fields drifting into place, like a picture developing. */
+.image-gen-blob {
+  position: absolute;
+  z-index: 0;
+  width: 70%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  filter: blur(26px);
+  opacity: 0.55;
+  will-change: transform;
+}
+
+.image-gen-blob.b1 {
+  background: var(--primary);
+  top: -18%;
+  left: -14%;
+  animation: image-gen-drift-a 7s ease-in-out infinite alternate;
+}
+
+.image-gen-blob.b2 {
+  background: var(--accent-teal);
+  bottom: -22%;
+  right: -16%;
+  animation: image-gen-drift-b 8s ease-in-out infinite alternate;
+}
+
+.image-gen-blob.b3 {
+  background: var(--accent-amber);
+  width: 50%;
+  top: 30%;
+  left: 28%;
+  opacity: 0.45;
+  animation: image-gen-drift-c 6s ease-in-out infinite alternate;
+}
+
+@keyframes image-gen-drift-a {
+  to { transform: translate(38%, 30%) scale(1.15); }
+}
+
+@keyframes image-gen-drift-b {
+  to { transform: translate(-34%, -28%) scale(0.9); }
+}
+
+@keyframes image-gen-drift-c {
+  0% { transform: translate(-30%, 20%) scale(0.85); }
+  100% { transform: translate(25%, -25%) scale(1.2); }
+}
+
+.image-gen-sweep {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(115deg, transparent 35%, rgba(255, 255, 255, 0.28) 50%, transparent 65%);
+  background-size: 250% 100%;
+  animation: image-gen-shimmer 2.4s ease-in-out infinite;
+  mix-blend-mode: soft-light;
+}
+
+@keyframes image-gen-breathe {
+  0%, 100% { box-shadow: 0 0 0 0 var(--primary-soft); }
+  50% { box-shadow: 0 0 0 4px var(--primary-soft); }
+}
+
+.image-gen-progress {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  z-index: 2;
+  height: 2px;
+  width: 100%;
+  background: var(--primary);
+  transform-origin: left;
+  transform: scaleX(0.04);
+  animation: image-gen-progress 10s cubic-bezier(0.2, 0.7, 0.3, 1) forwards;
+}
+
+@keyframes image-gen-progress {
+  to { transform: scaleX(0.92); }
 }
 
 @keyframes image-gen-shimmer {
@@ -5066,19 +5145,59 @@ body:has(.chat-page.is-empty) .tools-menu,
 }
 
 .image-gen-caption {
+  position: absolute;
+  left: 10px;
+  bottom: 12px;
+  z-index: 2;
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  max-width: calc(100% - 20px);
   font-size: 11.5px;
-  color: var(--muted);
-  background: var(--canvas);
+  color: var(--ink);
+  background: color-mix(in srgb, var(--canvas) 78%, transparent);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
   border: 1px solid var(--hairline);
   border-radius: var(--r-pill);
-  padding: 4px 9px;
+  padding: 4px 10px 4px 8px;
+  white-space: nowrap;
 }
 
-.image-gen-caption svg {
+.image-gen-icon {
+  display: inline-grid;
+  place-items: center;
   color: var(--primary);
+  animation: image-gen-twinkle 1.6s ease-in-out infinite;
+}
+
+@keyframes image-gen-twinkle {
+  0%, 100% { transform: scale(1) rotate(0deg); opacity: 1; }
+  50% { transform: scale(1.15) rotate(12deg); opacity: 0.7; }
+}
+
+.image-gen-stage {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.image-gen-stage.swap {
+  animation: image-gen-stage-in 0.35s ease-out;
+}
+
+@keyframes image-gen-stage-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* The finished image develops from blur, once, when it first arrives. */
+.message.entering .generated-image img {
+  animation: image-gen-reveal 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes image-gen-reveal {
+  from { opacity: 0; filter: blur(14px) saturate(1.3); transform: scale(0.98); }
+  to { opacity: 1; filter: none; transform: none; }
 }
 
 /* ── Help Study: quiz cards ───────────────────────────────────── */
@@ -5334,8 +5453,17 @@ body:has(.chat-page.is-empty) .tools-menu,
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .image-gen-placeholder {
+  .image-gen-placeholder,
+  .image-gen-blob,
+  .image-gen-sweep,
+  .image-gen-icon,
+  .image-gen-stage.swap,
+  .message.entering .generated-image img {
     animation: none;
+  }
+
+  .image-gen-progress {
+    display: none;
   }
 }
 

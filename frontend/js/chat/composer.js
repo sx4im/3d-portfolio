@@ -833,7 +833,7 @@ export class Composer {
     }
     this.modelBadgeWrap.style.display = "";
     if (this.isImageMode()) {
-      this.modelBadgeLabel.textContent = "Iris 1.0";
+      this.modelBadgeLabel.textContent = "Iris 2.0";
     } else {
       const m = this.availableModels.find((x) => x.id === this.currentModel);
       this.modelBadgeLabel.textContent = m ? m.label : "Stanza 2.5";
