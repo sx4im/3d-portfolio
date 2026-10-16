@@ -44,6 +44,21 @@ def friendly_error(exc: Exception) -> str:
     return msg
 
 
+MODEL_BUSY_REPLY = "Bmo is busy right now. Please try again in a moment."
+
+_TRANSIENT_MODEL_ERRORS = (
+    "resourceexhausted", "request limit", "provider_unavailable", "overloaded",
+    "rate limit", "429", "500", "502", "503", "504", "unavailable",
+    "timeout", "timed out", "network error", "stream interrupted",
+)
+
+
+def is_transient_model_error(exc: Exception) -> bool:
+    """True for provider capacity/network blips that are worth retrying."""
+    lower = (str(exc) or exc.__class__.__name__).lower()
+    return any(marker in lower for marker in _TRANSIENT_MODEL_ERRORS)
+
+
 def estimate_tokens(*texts: str) -> int:
     """~4 chars per token estimate for soft quotas."""
     return sum(len(t) for t in texts if t) // 4

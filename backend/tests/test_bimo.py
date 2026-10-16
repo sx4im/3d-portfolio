@@ -1867,6 +1867,72 @@ def test_chat_streams_search_events_and_augments_the_prompt(client, monkeypatch)
     assert "What is the price of Bitcoin today?" in content
 
 
+_BUSY_ERROR = "Stream interrupted: ResourceExhausted: Worker local total request limit reached (16/16)"
+
+
+def _post_plain_chat(client, convo_id):
+    return client.post(
+        "/chat",
+        headers={"Authorization": f"Bearer {_search_chat_token()}"},
+        json={"conversation_id": convo_id, "message": "Tell me the levels of organization", "auto_search": False},
+    )
+
+
+def test_chat_retries_when_the_model_is_busy_before_any_token(client, monkeypatch):
+    _stub_chat_persistence(monkeypatch)
+    calls = {"n": 0}
+
+    def flaky_stream(messages, **kwargs):
+        calls["n"] += 1
+        if calls["n"] < 3:
+            raise RuntimeError(_BUSY_ERROR)
+        yield {"type": "delta", "data": "Cells, tissues, organs."}
+        yield {"type": "done", "content": "Cells, tissues, organs."}
+
+    monkeypatch.setattr("app.nvidia_client.iter_response_with_fallback", flaky_stream)
+
+    body = _post_plain_chat(client, "c_busy_retry").get_data(as_text=True)
+    assert calls["n"] == 3
+    assert "Cells, tissues, organs." in body
+    assert "ResourceExhausted" not in body
+
+
+def test_chat_shows_a_short_busy_line_instead_of_the_raw_provider_error(client, monkeypatch):
+    from app.routes.helpers import MODEL_BUSY_REPLY
+
+    _stub_chat_persistence(monkeypatch)
+
+    def busy_stream(messages, **kwargs):
+        raise RuntimeError(_BUSY_ERROR)
+        yield  # pragma: no cover
+
+    monkeypatch.setattr("app.nvidia_client.iter_response_with_fallback", busy_stream)
+
+    body = _post_plain_chat(client, "c_busy_fail").get_data(as_text=True)
+    assert MODEL_BUSY_REPLY in body
+    assert "ResourceExhausted" not in body
+    assert "Analysis for batch" not in body
+
+
+def test_chat_does_not_retry_after_tokens_already_streamed(client, monkeypatch):
+    from app.routes.helpers import MODEL_BUSY_REPLY
+
+    _stub_chat_persistence(monkeypatch)
+    calls = {"n": 0}
+
+    def cut_stream(messages, **kwargs):
+        calls["n"] += 1
+        yield {"type": "delta", "data": "Cells are"}
+        raise RuntimeError(_BUSY_ERROR)
+
+    monkeypatch.setattr("app.nvidia_client.iter_response_with_fallback", cut_stream)
+
+    body = _post_plain_chat(client, "c_busy_partial").get_data(as_text=True)
+    assert calls["n"] == 1
+    assert body.count("Cells are") == 1
+    assert MODEL_BUSY_REPLY in body
+
+
 def test_chat_skips_search_when_the_router_declines(client, monkeypatch):
     from app import search_router
 

@@ -25,11 +25,13 @@ from ..config import (
 from ..limiter import limiter
 from ..prompts import AEON_SYSTEM_PROMPT, image_settings_reply
 from .helpers import (
+    MODEL_BUSY_REPLY,
     bad_request,
     estimate_tokens,
     friendly_error,
     get_usage_status,
     human_duration,
+    is_transient_model_error,
     is_trivial_prompt,
     sse_event,
     user_owns_path,
@@ -574,34 +576,57 @@ def chat(user):
                     yield sse_event({"type": "token", "data": {"delta": header}})
 
                 batch_reply = ""
-                try:
-                    max_tokens_override = 300 if chosen_friendly == "aeon" else None
-                    for ev in nvidia_client.iter_response_with_fallback(
-                        messages_payload,
-                        model=chosen_model,
-                        reasoning_effort=reasoning_effort,
-                        thinking=use_thinking,
-                        max_tokens=max_tokens_override,
-                    ):
-                        if cancel_event.is_set():
-                            logger.info("chat: generation cancelled by user for convo=%s", convo.get("id"))
-                            return
-                        if ev["type"] == "delta":
-                            batch_reply += ev["data"]
-                            full_reply += ev["data"]
-                            yield sse_event({"type": "token", "data": {"delta": ev["data"]}})
-                        elif ev["type"] == "reasoning_delta":
-                            full_reasoning += ev["data"]
-                            yield sse_event({"type": "reasoning_token", "data": {"delta": ev["data"]}})
-                        elif ev["type"] == "done":
-                            batch_reply += ev["content"] or ""
-                            full_reasoning += ev.get("reasoning") or ""
-                except Exception as exc:  # noqa: BLE001
-                    last_error = friendly_error(exc) or "Batch failed"
-                    error_note = f"\n\n[Analysis for batch {batch_idx + 1} failed: {last_error}]\n\n"
-                    full_reply += error_note
-                    yield sse_event({"type": "token", "data": {"delta": error_note}})
-                    continue
+                max_tokens_override = 300 if chosen_friendly == "aeon" else None
+                retry_delays = (1.5, 3.0)
+                for attempt in range(len(retry_delays) + 1):
+                    streamed = False
+                    try:
+                        for ev in nvidia_client.iter_response_with_fallback(
+                            messages_payload,
+                            model=chosen_model,
+                            reasoning_effort=reasoning_effort,
+                            thinking=use_thinking,
+                            max_tokens=max_tokens_override,
+                        ):
+                            if cancel_event.is_set():
+                                logger.info("chat: generation cancelled by user for convo=%s", convo.get("id"))
+                                return
+                            if ev["type"] == "delta":
+                                streamed = True
+                                batch_reply += ev["data"]
+                                full_reply += ev["data"]
+                                yield sse_event({"type": "token", "data": {"delta": ev["data"]}})
+                            elif ev["type"] == "reasoning_delta":
+                                streamed = True
+                                full_reasoning += ev["data"]
+                                yield sse_event({"type": "reasoning_token", "data": {"delta": ev["data"]}})
+                            elif ev["type"] == "done":
+                                batch_reply += ev["content"] or ""
+                                full_reasoning += ev.get("reasoning") or ""
+                        break
+                    except Exception as exc:  # noqa: BLE001
+                        # Retrying after tokens reached the client would duplicate them.
+                        if not streamed and attempt < len(retry_delays) and is_transient_model_error(exc):
+                            logger.warning(
+                                "chat: model %s busy (attempt %d), retrying: %s",
+                                chosen_model, attempt + 1, exc,
+                            )
+                            if cancel_event.wait(retry_delays[attempt]):
+                                return
+                            continue
+                        logger.warning(
+                            "chat: model %s failed for convo=%s batch=%d: %s",
+                            chosen_model, convo.get("id"), batch_idx + 1, exc,
+                        )
+                        if len(batches) > 1:
+                            error_note = f"\n\n[Part {batch_idx + 1} couldn't be read. {MODEL_BUSY_REPLY}]\n\n"
+                        elif full_reply.strip():
+                            error_note = f"\n\n{MODEL_BUSY_REPLY}"
+                        else:
+                            error_note = MODEL_BUSY_REPLY
+                        full_reply += error_note
+                        yield sse_event({"type": "token", "data": {"delta": error_note}})
+                        break
 
             # Final pass over the assembled reply: catch highlight.js markup
             # that arrived split across SSE chunks and decode entities the
