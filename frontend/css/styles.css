@@ -3315,7 +3315,7 @@ button:hover .icon-dislike,
 .sidebar.mobile .sidebar-nav-new,
 .sidebar.mobile .sidebar-nav-label {
   font-size: calc(14px * 1.03);
-  gap: calc(10px * 1.03);
+  gap: 6px;
   padding: calc(8px * 1.03) calc(12px * 1.03);
 }
 
