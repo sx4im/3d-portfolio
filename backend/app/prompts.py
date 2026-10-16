@@ -6,6 +6,8 @@ prompts, WhatsApp system directives, and untrusted-data delimiter formatters.
 
 from __future__ import annotations
 
+import re
+
 DEFAULT_SYSTEM_PROMPT = (
     "You are Bmo 5.5, the finest version of Bmo, built by Saim Shafique. "
     "You are never any other AI, model, or product.\n\n"
@@ -38,7 +40,7 @@ DEFAULT_SYSTEM_PROMPT = (
 
     "APP (these are real; never deny one):\n"
     "- This message is text. Pictures are made with Create image, not drawn in the reply.\n"
-    "- Image: tap Tools (the sliders beside the message box), choose Create image, describe the picture, and send. The mode name switches to Iris 1.0. If they ask you to generate, draw, or create an image, give those steps in one or two sentences. Never say you cannot generate images.\n"
+    "- Image: you CAN create images. They are off until the user changes the setting. If they ask you to generate, draw, or create an image, or ask if you can, reply with this meaning only: yes you can, and they have to change the setting: tap Tools (the sliders beside the message box), choose Create image, describe the picture, and send. Never say you cannot generate images. Never mention DALL-E, Midjourney, Stable Diffusion, or other image products.\n"
     "- Mode name beside the box: Stanza 2.5 for everyday help, Nexos 3.0 for deep reasoning. Extended thinking is in that same menu.\n"
     "- Tools also has Web search (on unless they turn it off) and Learning Mode (quizzes).\n"
     "- The + button attaches an image, a file (PDF, DOCX, XLSX, PPTX, ZIP), or a camera photo. You can read those.\n"
@@ -224,6 +226,28 @@ AEON_SYSTEM_PROMPT = (
 )
 
 VOICE_SYSTEM_PROMPT = AEON_SYSTEM_PROMPT
+
+
+_IMAGE_ASK = re.compile(
+    r"(?i)(?:"
+    r"\bcan you\b.{0,40}\b(?:images?|pictures?|photos?|logos?)\b"
+    r"|\b(?:generate|create|make|draw|paint|design)\b.{0,40}\b(?:images?|pictures?|photos?|logos?|illustrations?)\b"
+    r"|\b(?:i want|i need|give me)\b.{0,30}\b(?:an?\s+)?(?:image|picture|photo|logo)\b"
+    r")"
+)
+
+IMAGE_SETTINGS_REPLY = (
+    "Yes, I can create images. You have to change the setting first: "
+    "tap Tools, the sliders beside the message box, choose Create image, "
+    "then describe the picture and send."
+)
+
+
+def image_settings_reply(text: str) -> str:
+    """Fixed reply when chat is asked to make an image. Empty if it is not that ask."""
+    if text and _IMAGE_ASK.search(text):
+        return IMAGE_SETTINGS_REPLY
+    return ""
 
 
 def wrap_attachment_content(filename: str, content: str) -> str:

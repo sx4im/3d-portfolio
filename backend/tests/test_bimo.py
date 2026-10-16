@@ -397,6 +397,9 @@ def test_system_prompt_allows_document_generation_and_web_access():
     assert "could not be reached" in DEFAULT_SYSTEM_PROMPT
     assert "Never say you cannot generate images" in DEFAULT_SYSTEM_PROMPT
     assert "Create image" in DEFAULT_SYSTEM_PROMPT
+    from app.prompts import image_settings_reply
+    assert "change the setting" in image_settings_reply("Can you generate images")
+    assert image_settings_reply("explain photosynthesis") == ""
 
     assert "DOCUMENTS, RESUMES & PDF REQUESTS" in VISION_SYSTEM_PROMPT
     assert "clean Markdown" in VISION_SYSTEM_PROMPT

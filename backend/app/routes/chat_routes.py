@@ -23,7 +23,7 @@ from ..config import (
     get_vision_model,
 )
 from ..limiter import limiter
-from ..prompts import AEON_SYSTEM_PROMPT
+from ..prompts import AEON_SYSTEM_PROMPT, image_settings_reply
 from .helpers import (
     bad_request,
     estimate_tokens,
@@ -401,6 +401,10 @@ def chat(user):
         and not augmented_message
         and chosen_friendly != "aeon"
     )
+    # Chat cannot draw. Answer image asks here so the model cannot refuse them.
+    settings_reply = "" if chosen_friendly == "image" else image_settings_reply(message_text)
+    if settings_reply:
+        search_allowed = False
 
     def generate():
         nonlocal convo, user_message
@@ -525,7 +529,12 @@ def chat(user):
                 return None
 
         try:
+            if settings_reply:
+                full_reply = settings_reply
+                yield sse_event({"type": "token", "data": {"delta": settings_reply}})
             for batch_idx, batch_content in enumerate(batches):
+                if settings_reply:
+                    break
                 is_first_batch = batch_idx == 0
                 if is_first_batch:
                     if conversation_is_visual:
