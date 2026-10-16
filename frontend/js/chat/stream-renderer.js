@@ -28,7 +28,7 @@
  */
 
 import { renderMarkdown } from "../components/markdown.js?v=33";
-import { splitStreamBlocks } from "./stream-splitter.js?v=1";
+import { splitStreamBlocks } from "./stream-splitter.js?v=2";
 import { stripStrayCursors } from "./caret.js?v=1";
 import { el, clear } from "../utils.js?v=30";
 

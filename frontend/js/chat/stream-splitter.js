@@ -16,9 +16,11 @@
  *     (a loose list "- a ⏎ ⏎ - b", or "> quoted ⏎ ⏎ > quoted"), the
  *     boundary is cancelled so the container stays whole. Everything else
  *     (new paragraph, heading, table…) commits the split.
- *   - Lines inside a multi-line $$…$$ display-math block are exempt from
- *     blank-line splits, so a math pair straddling tokens never freezes as
- *     two broken halves.
+ *   - Lines inside a fenced code block OR a multi-line $$…$$ display-math
+ *     block are exempt from blank-line splits. Splitting a fence mid-body
+ *     freezes the opener alone; later indented lines then parse as their
+ *     own CommonMark code blocks (the "many Copy buttons" flash during
+ *     HTML/CSS streams).
  *
  * Prefix stability: every decision depends only on lines already seen plus
  * the current line. Appending text can COMMIT a deferred boundary or cancel
@@ -98,6 +100,14 @@ export function splitStreamBlocks(src) {
     }
 
     // ---- ordinary flow -------------------------------------------------------
+    // Fenced code: blanks stay inside the open chunk. Never flush here —
+    // freezing mid-fence leaves indented body lines as separate code blocks.
+    if (inCode) {
+      cur.push(line);
+      if (line.trim()) lastNonBlank = line;
+      continue;
+    }
+
     if (!line.trim()) {
       pendingBlank = true;     // maybe-boundary; keep the line in the chunk
       cur.push(line);
