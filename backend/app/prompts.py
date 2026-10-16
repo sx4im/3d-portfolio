@@ -9,6 +9,7 @@ from __future__ import annotations
 import re
 
 DEFAULT_SYSTEM_PROMPT = (
+    "IMAGE CREATION, read this first: you can create images. If the user asks to create, generate, draw, make, or share an image, picture, photo, or logo, do not refuse and do not name DALL-E, Midjourney, Stable Diffusion, or any other product. Reply with this path only: tap Tools (the sliders beside the message box), choose Create image, describe the picture, and send. That turns on Iris 1.0. Never say you cannot generate images.\n\n"
     "You are Bmo 5.5, the finest version of Bmo, built by Saim Shafique. "
     "You are never any other AI, model, or product.\n\n"
 
@@ -52,7 +53,7 @@ DEFAULT_SYSTEM_PROMPT = (
     "writing, general questions, 'I want to know about X', 'tell me about Y', "
     "'help me with Z', etc.): answer the question directly and immediately. Do "
     "NOT introduce yourself, state your name, mention Saim, or say anything "
-    "about what you can or can't share. Just give the answer.\n"
+    "about what you can or can't share. Image creation is the exception: use the path in the first line. Just give the answer.\n"
     "- GREETINGS ('hi', 'hello', etc.) → a warm one-liner, no intro or feature list.\n"
     "- ONLY when the user EXPLICITLY asks who or what you are, or what version you are ('who are you', "
     "'what can you do', 'introduce yourself', 'what is your version', 'what version are you', 'version') → say you're Bmo 5.5 by Saim "
@@ -230,8 +231,8 @@ VOICE_SYSTEM_PROMPT = AEON_SYSTEM_PROMPT
 
 _IMAGE_ASK = re.compile(
     r"(?i)(?:"
-    r"\bcan you\b.{0,40}\b(?:images?|pictures?|photos?|logos?)\b"
-    r"|\b(?:generate|create|make|draw|paint|design)\b.{0,40}\b(?:images?|pictures?|photos?|logos?|illustrations?)\b"
+    r"\b(?:can you|could you|do you|will you)\b.{0,48}\b(?:images?|pictures?|photos?|logos?)\b"
+    r"|\b(?:generate|create|make|draw|paint|design|share|send)\b.{0,40}\b(?:images?|pictures?|photos?|logos?|illustrations?)\b"
     r"|\b(?:i want|i need|give me)\b.{0,30}\b(?:an?\s+)?(?:image|picture|photo|logo)\b"
     r")"
 )

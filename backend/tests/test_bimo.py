@@ -395,10 +395,12 @@ def test_system_prompt_allows_document_generation_and_web_access():
     assert "newest items by Published date" in DEFAULT_SYSTEM_PROMPT
     assert "Never lead with stale stories" in DEFAULT_SYSTEM_PROMPT
     assert "could not be reached" in DEFAULT_SYSTEM_PROMPT
+    assert DEFAULT_SYSTEM_PROMPT.startswith("IMAGE CREATION")
     assert "Never say you cannot generate images" in DEFAULT_SYSTEM_PROMPT
     assert "Create image" in DEFAULT_SYSTEM_PROMPT
     from app.prompts import image_settings_reply
     assert "change the setting" in image_settings_reply("Can you generate images")
+    assert image_settings_reply("can you share images")
     assert image_settings_reply("explain photosynthesis") == ""
 
     assert "DOCUMENTS, RESUMES & PDF REQUESTS" in VISION_SYSTEM_PROMPT
