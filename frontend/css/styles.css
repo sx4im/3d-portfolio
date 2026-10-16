@@ -3314,17 +3314,17 @@ button:hover .icon-dislike,
 .sidebar.mobile .sidebar-nav a,
 .sidebar.mobile .sidebar-nav-new,
 .sidebar.mobile .sidebar-nav-label {
-  font-size: calc(14px * 1.05);
-  gap: calc(10px * 1.05);
-  padding: calc(8px * 1.05) calc(12px * 1.05);
+  font-size: calc(14px * 1.03);
+  gap: calc(10px * 1.03);
+  padding: calc(8px * 1.03) calc(12px * 1.03);
 }
 
 .sidebar.mobile .sidebar-nav-icon,
 .sidebar.mobile .sidebar-nav-new .sidebar-nav-icon,
 .sidebar.mobile .sidebar-nav-icon svg,
 .sidebar.mobile .sidebar-nav-new .sidebar-nav-icon svg {
-  width: calc(18px * 1.05);
-  height: calc(18px * 1.05);
+  width: calc(18px * 1.03);
+  height: calc(18px * 1.03);
 }
 
 .sidebar.mobile .sidebar-section-head,
