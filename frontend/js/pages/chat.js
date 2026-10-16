@@ -540,8 +540,12 @@ export async function renderChat({ id, incognito }) {
   setTimeout(attemptFocus, 600);
   setTimeout(attemptFocus, 1000);
 
-  // On touch/mobile devices, tapping anywhere outside interactive controls immediately focuses composer & raises keyboard
+  // Mouse clicks on empty space keep the caret in the composer. Touch and pen
+  // taps must not, because focusing a textarea raises the on-screen keyboard.
+  let lastPointerType = "mouse";
   const handleUniversalFocus = (e) => {
+    if (e.type === "pointerdown") lastPointerType = e.pointerType || "mouse";
+    if (lastPointerType !== "mouse") return;
     if (e.target?.closest?.("button, a, input, select, textarea, [role='menu'], [role='option'], .model-dropdown, .tools-menu, .attachment-menu")) {
       return;
     }
@@ -550,7 +554,6 @@ export async function renderChat({ id, incognito }) {
   window.addEventListener("focus", attemptFocus);
   window.addEventListener("pageshow", attemptFocus);
   page.addEventListener("click", handleUniversalFocus);
-  document.addEventListener("touchstart", handleUniversalFocus, { passive: true });
   document.addEventListener("pointerdown", handleUniversalFocus, { passive: true });
 
   shell.setIncognitoActive?.(Boolean(incognito));
@@ -1104,7 +1107,6 @@ export async function renderChat({ id, incognito }) {
     window.removeEventListener("focus", attemptFocus);
     window.removeEventListener("pageshow", attemptFocus);
     document.removeEventListener("click", onDocClickConvoMenu);
-    document.removeEventListener("touchstart", handleUniversalFocus);
     document.removeEventListener("pointerdown", handleUniversalFocus);
     document.removeEventListener("visibilitychange", onVisibilityChange);
     window.removeEventListener("bmo:conversations-updated", onConversationsUpdated);
