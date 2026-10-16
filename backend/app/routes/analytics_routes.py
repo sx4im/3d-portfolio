@@ -27,6 +27,7 @@ def health():
         "status": "ok",
         "store": "supabase" if supabase_client.is_configured() else "unconfigured",
         "models": "configured" if nvidia_client.is_configured() else "unconfigured",
+        "image_model": nvidia_client.image_model(),
         "tts": "configured" if is_deepgram_configured() else "unconfigured",
     })
 

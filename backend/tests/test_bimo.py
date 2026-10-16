@@ -207,9 +207,10 @@ def test_real_model_ids_use_defaults():
     assert nvidia_client.image_model() == "black-forest-labs/flux-3-image-klein"
 
 
-def test_flux3_klein_runs_full_steps_without_cfg_or_mode(monkeypatch):
+def test_image_generation_always_uses_flux3_klein_at_full_steps(monkeypatch):
     from app import nvidia_client
 
+    monkeypatch.setenv("NVIDIA_IMAGE_MODEL", "black-forest-labs/flux.2-klein-4b")
     sent = {}
 
     def fake_post(url, key, body):
@@ -219,12 +220,15 @@ def test_flux3_klein_runs_full_steps_without_cfg_or_mode(monkeypatch):
     monkeypatch.setattr(nvidia_client, "_post_image", fake_post)
     monkeypatch.setattr(nvidia_client, "_read_api_key", lambda *a, **k: "k")
     with pytest.raises(RuntimeError):
-        nvidia_client.generate_image("a poster", model="black-forest-labs/flux-3-image-klein", seed=1)
+        nvidia_client.generate_image("a poster", seed=1)
 
+    assert nvidia_client.image_model() == "black-forest-labs/flux-3-image-klein"
     assert sent["url"].endswith("/black-forest-labs/flux-3-image-klein")
-    assert sent["body"]["steps"] == 50
-    assert "cfg_scale" not in sent["body"] and "mode" not in sent["body"]
-    assert nvidia_client._default_image_steps("black-forest-labs/flux.2-klein-4b") == 4
+    assert sent["body"] == {"prompt": "a poster", "seed": 1, "steps": 50, "width": 1024, "height": 1024}
+
+
+def test_health_reports_the_live_image_model(client):
+    assert client.get("/health").get_json()["image_model"] == "black-forest-labs/flux-3-image-klein"
 
 
 def test_real_model_ids_follow_env(monkeypatch):
@@ -232,7 +236,6 @@ def test_real_model_ids_follow_env(monkeypatch):
     monkeypatch.setenv("NVIDIA_STANZA_MODEL", "vendor/stanza-custom")
     monkeypatch.setenv("NVIDIA_NEXOS_MODEL", "vendor/nexos-custom")
     monkeypatch.setenv("NVIDIA_VISION_MODEL", "vendor/vision-custom")
-    monkeypatch.setenv("NVIDIA_IMAGE_MODEL", "vendor/image-custom")
     from app import main, nvidia_client
     importlib.reload(main)
     importlib.reload(nvidia_client)
@@ -240,7 +243,6 @@ def test_real_model_ids_follow_env(monkeypatch):
     assert main.REAL_ID_MAP["thinking"] == "vendor/stanza-custom"
     assert main.REAL_ID_MAP["deep"]     == "vendor/nexos-custom"
     assert main.VISION_MODEL            == "vendor/vision-custom"
-    assert nvidia_client.image_model()  == "vendor/image-custom"
 
 
 def test_usage_weighting_and_windows(monkeypatch):

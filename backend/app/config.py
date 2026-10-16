@@ -14,6 +14,8 @@ DEFAULT_NEXOS_MODEL = "nvidia/nemotron-3-super-120b-a12b"
 DEFAULT_VISION_MODEL = "google/diffusiongemma-26b-a4b-it"
 DEFAULT_AEON_MODEL = "qwen/qwen3.8-27b"
 DEFAULT_IMAGE_MODEL = "black-forest-labs/flux-3-image-klein"
+# NVIDIA hosts the undistilled FLUX 3 Klein base; fewer steps garble lettering.
+IMAGE_STEPS = 50
 DEFAULT_DEEPGRAM_TTS_MODEL = "flux-sienna-en"
 DEFAULT_DEEPGRAM_WS_URL = "wss://api.deepgram.com/v2/speak"
 DEFAULT_BASE_URL = "https://integrate.api.nvidia.com/v1"

@@ -108,7 +108,7 @@ def generate_image_route(user):
     try:
         chosen_model = nvidia_client.image_model()
         t_img = time.time()
-        png = nvidia_client.generate_image(prompt, model=chosen_model)
+        png = nvidia_client.generate_image(prompt)
         logger.info(
             "images: generated user=%s convo=%s model=%s bytes=%d in %.2fs",
             user.id, convo.get("id"), chosen_model, len(png), time.time() - t_img,

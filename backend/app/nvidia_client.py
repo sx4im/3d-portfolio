@@ -54,6 +54,7 @@ from .config import (
     DEFAULT_IMAGE_BASE_URL,
     DEFAULT_IMAGE_MODEL,
     DEFAULT_MODEL,
+    IMAGE_STEPS,
     get_nexos_model,
     get_stanza_model,
     get_vision_model,
@@ -160,8 +161,8 @@ def image_base_url() -> str:
 
 
 def image_model() -> str:
-    """Text-to-image model."""
-    return os.getenv("NVIDIA_IMAGE_MODEL", DEFAULT_IMAGE_MODEL)
+    """Text-to-image model. Not env-configurable, so a stale Render value can't swap it."""
+    return DEFAULT_IMAGE_MODEL
 
 
 def _image_timeout() -> float:
@@ -169,27 +170,6 @@ def _image_timeout() -> float:
         return float(os.getenv("NVIDIA_IMAGE_TIMEOUT", "120"))
     except (TypeError, ValueError):
         return 120.0
-
-
-def _is_klein(model: str) -> bool:
-    return "klein" in model.lower()
-
-
-def _default_image_steps(model: str) -> int:
-    m = model.lower()
-    # FLUX 3 Klein on NVIDIA is the undistilled base; 4 steps garbles text.
-    if "flux-3" in m or "flux.3" in m:
-        return 50
-    if "schnell" in m or "klein" in m:
-        return 4
-    return 50
-
-
-def _default_image_cfg(model: str) -> float:
-    m = model.lower()
-    if "schnell" in m or "klein" in m:
-        return 0.0
-    return 3.5
 
 
 def _extract_image_b64(data) -> Optional[str]:
@@ -269,18 +249,13 @@ def _post_image(url: str, key: str, body: dict) -> dict:
 def generate_image(
     prompt: str,
     *,
-    model: Optional[str] = None,
     width: int = 1024,
     height: int = 1024,
     seed: Optional[int] = None,
-    steps: Optional[int] = None,
-    cfg_scale: Optional[float] = None,
+    steps: int = IMAGE_STEPS,
 ) -> bytes:
     """Generate an image and return the raw PNG bytes."""
-    chosen = model or image_model()
-    steps = steps if steps is not None else _default_image_steps(chosen)
-    cfg_scale = cfg_scale if cfg_scale is not None else _default_image_cfg(chosen)
-    klein = _is_klein(chosen)
+    chosen = image_model()
     key = _read_api_key()
     url = f"{image_base_url()}/{chosen}"
 
@@ -288,16 +263,7 @@ def generate_image(
     attempts = 1 if pinned_seed else 3
     for attempt in range(attempts):
         use_seed = seed if pinned_seed else random.randint(0, 2_147_483_646)
-        body: dict = {"prompt": prompt, "seed": use_seed, "steps": steps}
-        if cfg_scale and not klein:
-            body["cfg_scale"] = cfg_scale
-
-        if not klein:
-            body["mode"] = "base"
-
-        body["width"] = width
-        body["height"] = height
-
+        body = {"prompt": prompt, "seed": use_seed, "steps": steps, "width": width, "height": height}
         data = _post_image(url, key, body)
 
         finish = _extract_finish_reason(data).upper()

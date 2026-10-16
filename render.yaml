@@ -49,12 +49,10 @@ services:
       # the SDK backs off and honours that header within this budget.
       - key: NVIDIA_MAX_RETRIES
         value: "3"
-      # Image generation (Iris). Served via NVIDIA's GenAI endpoint.
-      # FLUX 3 Klein: undistilled base, 50 steps, clean text rendering (~7s).
+      # Image generation (Iris). Served via NVIDIA's GenAI endpoint. The model
+      # (FLUX 3 Klein, 50 steps) is fixed in code; NVIDIA_IMAGE_MODEL is ignored.
       - key: NVIDIA_IMAGE_BASE_URL
         value: https://ai.api.nvidia.com/v1/genai
-      - key: NVIDIA_IMAGE_MODEL
-        value: black-forest-labs/flux-3-image-klein
       - key: CORS_ORIGINS
         value: https://bimo.qzz.io,http://localhost:5500,http://127.0.0.1:5500
       # Rate limiting is ON for the live deployment (per-user keying with IP
