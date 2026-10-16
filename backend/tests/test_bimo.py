@@ -395,6 +395,8 @@ def test_system_prompt_allows_document_generation_and_web_access():
     assert "newest items by Published date" in DEFAULT_SYSTEM_PROMPT
     assert "Never lead with stale stories" in DEFAULT_SYSTEM_PROMPT
     assert "could not be reached" in DEFAULT_SYSTEM_PROMPT
+    assert "Never say you cannot generate images" in DEFAULT_SYSTEM_PROMPT
+    assert "Create image" in DEFAULT_SYSTEM_PROMPT
 
     assert "DOCUMENTS, RESUMES & PDF REQUESTS" in VISION_SYSTEM_PROMPT
     assert "clean Markdown" in VISION_SYSTEM_PROMPT
@@ -1110,7 +1112,8 @@ def test_chat_aeon_model_stream(client, monkeypatch):
     assert captured_kwargs.get("max_tokens") == 300
     # Verify AEON_SYSTEM_PROMPT is used
     sys_msgs = [m["content"] for m in captured_kwargs.get("messages", []) if m["role"] == "system"]
-    assert any("You are Aeon" in m for m in sys_msgs)
+    assert any("You are Bmo Voice" in m for m in sys_msgs)
+    assert "You are Aeon" not in AEON_SYSTEM_PROMPT
 
 
 def test_chat_default_reasoning_efforts(client, monkeypatch):

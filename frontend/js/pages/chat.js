@@ -18,7 +18,7 @@ import * as api from "../api.js?v=61";
 import { Composer, DEFAULT_AVAILABLE_MODELS, extractUrls } from "../chat/composer.js?v=25";
 import { MessageFeed } from "../chat/message-feed.js?v=36";
 import { StreamHandler, getRandomPhrase } from "../chat/stream-handler.js?v=8";
-import { STUDY_SYSTEM_PROMPT } from "../chat/study-mode.js?v=2";
+import { STUDY_SYSTEM_PROMPT } from "../chat/study-mode.js?v=3";
 import {
   detectExportIntent,
   buildCanonicalMarkdown,
