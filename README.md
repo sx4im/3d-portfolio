@@ -2,7 +2,7 @@
 
 <h1><img src=".github/assets/logo.svg" alt="Bmo" width="120" align="absmiddle" /></h1>
 
-A streaming AI chat workspace and agent built on a plain JavaScript frontend and a Flask backend proxying NVIDIA inference and Supabase storage. Chat on the web or over WhatsApp.
+A streaming AI chat workspace and agent built with vanilla JavaScript on the frontend and a lightweight Flask backend proxying NVIDIA inference and Supabase storage. Chat on the web or seamlessly connect via WhatsApp.
 
 [![Live demo](https://img.shields.io/badge/Live_demo-bimo.qzz.io-d97757?style=flat-square)](https://bimo.qzz.io)
 [![License: Proprietary](https://img.shields.io/badge/License-Proprietary-red.svg?style=flat-square)](LICENSE)
@@ -20,9 +20,9 @@ A streaming AI chat workspace and agent built on a plain JavaScript frontend and
 
 ## What is Bmo
 
-Bmo is a proprietary AI chat app and agent workspace. It streams responses token by token over Server-Sent Events, renders Markdown, code blocks, and math formulas as they arrive, and supports image generation, document parsing, and voice interaction.
+Bmo is a fast, full-featured AI workspace and agent. It streams responses token by token via Server-Sent Events, renders live Markdown, code blocks with syntax highlighting, and math expressions, and supports image generation, document parsing, and bidirectional voice interaction.
 
-The browser client uses HTML, CSS, and plain ES modules without build tools, frameworks, or bundlers. The backend is a Flask gateway that authenticates Supabase user tokens, enforces rate limits, and routes inference to NVIDIA endpoints.
+The client is built with clean, dependency-free HTML, CSS, and modern ES modules—no bundlers or build steps required. The backend is an efficient Flask gateway that validates Supabase user tokens, enforces rate limits, and routes inference to NVIDIA and Mistral endpoints.
 
 ## Explainer video
 
